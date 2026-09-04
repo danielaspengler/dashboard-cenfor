@@ -11,14 +11,19 @@ Next.js 16 · Supabase · Tailwind 4.
 ```bash
 cp .env.local.example .env.local   # y completar las claves que faltan
 npm install
-npx next dev --port 3100
+npm run dev
 ```
 
 El puerto 3100 y no el 3000: el 3000 lo ocupa otro proyecto.
 
-> En la máquina donde se desarrolla hoy, `next dev` falla al compilar `globals.css`
-> (Turbopack no puede lanzar el proceso de PostCSS). Mientras tanto:
-> `npx next build && npx next start --port 3100`.
+**`npm run dev` usa webpack, no Turbopack**, y no es una preferencia: en la máquina donde se
+desarrolla hoy Turbopack no puede compilar `globals.css` —muere al lanzar el proceso hijo de
+PostCSS con `exit code: 0xc0000142`— y las cuatro pantallas devuelven 500. Con webpack anda
+todo, recarga en caliente incluida. Si algún día se prueba que Turbopack funciona, se saca
+el `--webpack` del script.
+
+Síntoma para reconocerlo: **las páginas dan 500 pero `/api/sync` responde 200**. Las rutas de
+API no importan el CSS, así que son las únicas que sobreviven.
 
 ## Cómo entra el dato
 
