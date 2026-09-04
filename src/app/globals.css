@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Paleta provisoria, neutra. Cuando llegue la identidad de CENFOR se
+   cambia acá y en src/lib/marca.ts, y se propaga a toda la app. */
+@theme {
+  --color-tinta: #1c1c1a;
+  --color-hueso: #faf9f7;
+  --color-piedra: #8a8a84;
+  --color-borde: #e5e3df;
+}
+
+body {
+  background: var(--color-hueso);
+  color: var(--color-tinta);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
