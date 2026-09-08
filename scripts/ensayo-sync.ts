@@ -11,19 +11,25 @@
 // Cuando la key esté cargada, la prueba de verdad es la ruta:
 //   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3100/api/sync
 
-import { readFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ejecutarSync } from "../src/lib/sync/ejecutar.ts";
 import { FUENTES } from "../src/lib/sync/fuentes.ts";
 
-const CLAVE = JSON.parse(
-  readFileSync(
-    "C:/Users/Daniela Spengler/Desktop/Claude/HOLT/CENFOR/_credenciales/cenfor-service-account.json",
-    "utf8",
-  ),
-);
-process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = CLAVE.client_email;
-process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = CLAVE.private_key;
+// Las credenciales salen de `.env.local`, la MISMA fuente que usa la app.
+//
+// Antes este script leía un JSON de credenciales por ruta absoluta. Al rotar la
+// clave de Google (08/09/2026) el ensayo siguió usando la vieja y falló con
+// "Invalid JWT Signature" mientras la app andaba perfecto: el script mentía
+// sobre el estado real. Leyendo de `.env.local` no pueden volver a divergir, y
+// no hace falta que exista ningún archivo de claves suelto en el disco.
+process.loadEnvFile(".env.local");
+
+for (const v of ["GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"]) {
+  if (!process.env[v]) {
+    console.error(`Falta ${v} en .env.local — sin eso el ensayo no puede leer las planillas.`);
+    process.exit(1);
+  }
+}
 
 // Copia fiel del seed (20260903120200_seed_marcas_areas_y_locales.sql).
 // Si el seed cambia, esto queda viejo — es una maqueta de prueba, no la fuente.

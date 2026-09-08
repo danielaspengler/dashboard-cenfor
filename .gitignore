@@ -7,3 +7,9 @@ build
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Respaldos y variantes de .env: cualquier archivo que empiece con .env queda
+# afuera, salvo el ejemplo. Nace de un accidente real (08/09/2026):
+# ".env.local.backup-antes-de-rotar" NO matcheaba ".env*.local" y se subio.
+.env*
+!.env.local.example
