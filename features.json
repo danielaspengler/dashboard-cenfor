@@ -1,0 +1,97 @@
+{
+  "project": "Dashboard CENFOR",
+  "updated": "2026-09-08",
+  "_nota": "Fuente de verdad de qué falta. Las recetas de cada feature van en specs/C{n}-{slug}/. Prefijo 'C' (CENFOR) para no confundir con las 'D' del Dashboard de Papanato ni las 'F' de Proyecto ORIGEN. Sembrado el 08/09/2026 desde HOLT/CENFOR/memory.md y proyecto-dashboard/HANDOFF.md, que son el registro de lo construido ANTES de instalar el arnés.",
+  "_contexto": {
+    "que_es": "Tablero de operaciones de CENFOR: reseñas de Google, mystery shopper, auditorías presenciales y delivery, alimentado solo desde planillas de Google Drive.",
+    "produccion": "https://dashboard-cenfor.vercel.app (deploy automático con cada push a main)",
+    "login": "Google OAuth vía Supabase. Tabla emails_autorizados: quien está, ve todo; quien no, no crea cuenta ni lee una fila. La app está en modo Prueba en Google: cada mail hay que cargarlo también como usuario de prueba.",
+    "supabase": "proyecto 'Calidad - Cenfor' (rnismttcxwrydcyxpygs), en la organización de Den. Daniela es Administrator. RLS activa.",
+    "estructura": "CENFOR es una SOCIEDAD con 2 marcas y 10 locales: Censurado (7) y Formaggio (3). Por eso hay una tabla brands por encima de locations, nivel que el dashboard de Papanato no tiene. 'Nueva Córdoba' existe en las dos marcas: ningún local se identifica solo por su nombre. Tabla de equivalencias en ../LOCALES.md, relevamiento de las planillas en ../MAPA-DE-FUENTES.md.",
+    "arquitectura": "Una sola ruta /api/sync corre las 4 fuentes, porque el plan gratuito de Vercel permite 2 crons por día. Cada fuente va en su try/catch para que una planilla rota no tumbe las otras tres. Se puede correr una sola con ?fuente=. Cron diario 08:00 UTC."
+  },
+  "features": [
+    {
+      "id": "C1",
+      "title": "Base: app Next.js 16 + Supabase + Tailwind 4, esquema con brands por encima de locations (2 marcas, 10 locales), menú lateral. Identidad del cliente CENFOR, no HOLT.",
+      "status": "done"
+    },
+    {
+      "id": "C2",
+      "title": "Acceso: login con Google, configurado y probado de punta a punta el 07/09/2026, + tabla emails_autorizados en dos capas (trigger en auth.users + RLS). Sin roles: quien está autorizado ve todo. Chequeo rápido sin navegador: /auth/v1/settings con la anon key tiene que decir google:true; si dice false, /authorize responde 400 en vez de 302.",
+      "status": "done"
+    },
+    {
+      "id": "C3",
+      "title": "Sync: una sola ruta /api/sync con las 4 fuentes (reseñas, snapshot de Google, mystery shopper de las 2 marcas, auditorías). Lee de Google Drive por la URL pública de export, porque el conector de Drive de Claude solo ve archivos que creó Daniela, no los compartidos con ella. Ensayo en seco con 'npm run ensayo-sync': corre el mismo código contra las planillas vivas con un Supabase falso, sin necesitar la service_role key.",
+      "status": "done"
+    },
+    {
+      "id": "C4",
+      "title": "Puntuaciones y reseñas: reseñas de Google por local y por marca. El acumulado de Google NO se filtra por fecha: es el histórico de la ficha, no una suma del período.",
+      "status": "done"
+    },
+    {
+      "id": "C5",
+      "title": "Mystery Shopper: las planillas YA calculan el puntaje y la clasificación (hoja 'Puntajes por Visita', configurable desde 'Configuración de Puntaje'), así que el dashboard lee el resultado y no reimplementa el scoring. Umbrales iguales en las dos marcas: 90 o más Excelente, 75 Bueno, 60 Regular, menos de 60 Deficiente.",
+      "status": "done"
+    },
+    {
+      "id": "C6",
+      "title": "Auditorías presenciales: la planilla NO tiene historial (es una plantilla con una pestaña por local y solo la última auditoría en cada una). El sync guarda cada auditoría en Supabase con dedup por local+fecha, así el dashboard se vuelve el archivo histórico que la planilla no tiene. Se lee el campo LOCAL de adentro, nunca el nombre de la pestaña.",
+      "status": "done"
+    },
+    {
+      "id": "C7",
+      "title": "Resumen + filtros: período en las cuatro pantallas con datos, marca en el Resumen. Viven en la URL, así que las pantallas siguen siendo server components. Default 'Todo' porque con tan poco dato cualquier otro corte abre el tablero vacío.",
+      "status": "done"
+    },
+    {
+      "id": "C8",
+      "title": "Producción: publicado el 07/09/2026 en https://dashboard-cenfor.vercel.app (team Papanato, plan Hobby), 7 variables cargadas con MODO_DEMO=0, cron /api/sync 08:00 UTC activo. Corrida real desde Vercel: 200 en 6,6 s, 52 filas (29 reseñas · 9 snapshots · 8 visitas · 6 auditorías), conteos idénticos a la base (el dedup anda), cero filas sin local. OJO: la URL buena es dashboard-cenfor.vercel.app, no la que Vercel muestra al terminar el deploy (esa cambia en cada push y está detrás del SSO de Vercel).",
+      "status": "done"
+    },
+    {
+      "id": "C9",
+      "title": "Delivery — Rappi. HECHO: migraciones de esquema (sub_brands, delivery_points, delivery_metrics, delivery_issues, con RLS), seed de 3 marcas B + 21 puntos de venta, y parser probado contra la planilla viva (268 filas, cero descartadas, claves únicas confirmadas). La unidad que se mide es el PUNTO DE VENTA (local + marca B + formato + canal), no el local: 22 puntos sobre 10 locales. Las marcas B (Lomos la Catedral, Burger Club, Woops) son dark kitchens que cocinan dentro de un local y cuelgan del local, no de brands; el formato Turbo de Rappi es un punto de venta aparte que no se suma al local. Los períodos son MENSUALES (julio y agosto 2026), y los indicadores están en las columnas E-Q, no E-P: la Q trae la cantidad de reseñas, necesaria para ponderar la calificación de la P. En las pestañas de motivos hay DOS cargas de agosto (cerradas al 24 y al 31): la clave única incluye period_end, y sumar motivos por mes contaría agosto dos veces. FALTA: integrarlo al sync y hacer la pantalla.",
+      "status": "in_progress"
+    },
+    {
+      "id": "C10",
+      "title": "Delivery — PedidosYa y Uber: cada uno con su planilla y su parser. Los tres canales de delivery son solo de Censurado. Espera que C9 esté cerrado.",
+      "status": "todo"
+    },
+    {
+      "id": "C11",
+      "title": "Identidad visual de CENFOR: logo, paleta y tipografías. Hoy hay una paleta neutra en src/lib/marca.ts — la marca no se hardcodea, vive en ese único archivo.",
+      "status": "todo"
+    },
+    {
+      "id": "C12",
+      "title": "Plan de acción: entró al menú como lugar reservado. BLOQUEADA hasta definir con el cliente si las acciones las carga el equipo o las propone el tablero, quién puede cargarlas, y cuándo se cierra una.",
+      "status": "blocked"
+    },
+    {
+      "id": "C13",
+      "title": "Marketing y Administración: salieron del menú el 04/09/2026 (estaban en gris, copiadas del maestro). Vuelven agregándolas a NAVIGATION en src/lib/navigation.ts cuando haya fuente de datos.",
+      "status": "todo"
+    }
+  ],
+  "_esperando_definicion_de_daniela": [
+    "Dos puntos de venta de Rappi sin identificar: 'Censurado - Alta Córdoba' (aparece en indicadores) y 'Censurado - Olga Orozco 3023' (solo en motivos). No corresponden a ninguno de los 10 locales, y Luuma no aparece en la planilla con ese nombre: alguno de los dos puede ser Luuma. Hasta definirlo, el sync los descarta y los informa.",
+    "placeId de Censurado Luuma, el único local sin ficha de Google.",
+    "Umbral de aceptación de las auditorías presenciales.",
+    "Qué mails van en emails_autorizados (hoy hay uno solo, el de Daniela)."
+  ],
+  "_tareas_manuales_de_daniela": [
+    "SEGURIDAD: rotar la clave de la cuenta de servicio de Google — se imprimió completa en una conversación el 04/09/2026.",
+    "Publicar la app en Google si se quiere abrir al equipo: hoy está en modo Prueba y solo entran los mails cargados como usuarios de prueba (hasta 100).",
+    "Avisar al cliente que las tres planillas tienen las fechas con el formato roto (usan AAAA para el año, que Sheets escribe literal: '27/08/AAAA'). El sync lo esquiva leyendo los valores sin formato, pero si alguien exporta o imprime esas planillas, las fechas salen sin año."
+  ],
+  "_status_values": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "done"
+  ]
+}
