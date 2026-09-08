@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PERIODOS } from "@/lib/filtros";
+import { PERIODOS, etiquetaMes } from "@/lib/filtros";
 
 // Los únicos componentes de cliente del tablero, además del menú. Solo
 // escriben el filtro en la URL: quien vuelve a calcular es el servidor.
@@ -102,5 +102,31 @@ export function FiltroMarca({
         </Boton>
       ))}
     </Grupo>
+  );
+}
+
+/**
+ * Selector de mes de Delivery.
+ *
+ * Es un `select` y no botones como los otros filtros porque la lista crece un
+ * mes por mes: hoy son dos, en un año son doce y una fila de botones no entra.
+ */
+export function FiltroMes({ actual, meses }: { actual: string; meses: string[] }) {
+  const cambiar = useCambiarParam();
+  if (meses.length <= 1) return null;
+
+  return (
+    <select
+      value={actual}
+      onChange={(e) => cambiar("mes", e.target.value, e.target.value === meses[0])}
+      aria-label="Mes"
+      className="rounded-lg border border-[var(--color-borde)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-tinta)]"
+    >
+      {meses.map((m) => (
+        <option key={m} value={m}>
+          {etiquetaMes(m)}
+        </option>
+      ))}
+    </select>
   );
 }

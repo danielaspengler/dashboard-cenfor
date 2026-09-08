@@ -119,3 +119,47 @@ export function fechaCorta(iso: string | null | undefined) {
   const [y, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
+
+/**
+ * Variación contra el período anterior, en puntos porcentuales.
+ *
+ * El color no lo decide el signo: en cancelaciones o reclamos bajar es bueno
+ * y en disponibilidad es malo. De ahí `mejorSiBaja`. Una variación de menos
+ * de una décima se muestra como "sin cambios" en vez de un 0,0 con flecha,
+ * que se lee como un movimiento que no existió.
+ */
+export function Variacion({
+  delta,
+  mejorSiBaja = false,
+  unidad = "pts",
+  contra,
+}: {
+  delta: number | null;
+  mejorSiBaja?: boolean;
+  unidad?: string;
+  contra: string;
+}) {
+  if (delta === null) return null;
+  if (Math.abs(delta) < 0.1)
+    return <span className="text-[var(--color-piedra)]">sin cambios vs {contra}</span>;
+
+  const bien = mejorSiBaja ? delta < 0 : delta > 0;
+  return (
+    <span style={{ color: bien ? "#15803d" : "#b91c1c" }}>
+      {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} {unidad} vs {contra}
+    </span>
+  );
+}
+
+const PESOS = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
+
+export function pesos(valor: number | null | undefined) {
+  if (valor === null || valor === undefined) return "—";
+  return `$ ${PESOS.format(valor)}`;
+}
+
+/** Porcentaje sin semáforo: delivery todavía no tiene umbrales del cliente. */
+export function Pct({ valor }: { valor: number | null | undefined }) {
+  if (valor === null || valor === undefined) return <SinDato>—</SinDato>;
+  return <span className="tabular-nums">{valor.toFixed(1)}%</span>;
+}

@@ -77,3 +77,39 @@ export function leerMarca(
 
 /** Lo que las páginas reciben de Next, ya normalizado. */
 export type Busqueda = Record<string, string | string[] | undefined>;
+
+// ── Mes ──────────────────────────────────────────────────────────────────
+//
+// Delivery tiene su propio filtro y no usa el de período. Los datos de las
+// apps son un CIERRE MENSUAL, no una serie de fechas: con "30 días" julio
+// desaparecería entero y agosto quedaría a medias sin que nadie lo note.
+// Un mes entra completo o no entra.
+
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+/** "2026-08" → "Agosto 2026" */
+export function etiquetaMes(mes: string): string {
+  const [anio, m] = mes.split("-");
+  return `${MESES[Number(m) - 1] ?? m} ${anio}`;
+}
+
+/**
+ * El mes elegido, o el más reciente con datos.
+ *
+ * `disponibles` viene ordenado del más nuevo al más viejo. Un mes que no está
+ * en la lista —una URL vieja, un parámetro a mano— cae en el más reciente en
+ * vez de mostrar una pantalla vacía.
+ */
+export function leerMes(valor: string | string[] | undefined, disponibles: string[]): string {
+  const v = Array.isArray(valor) ? valor[0] : valor;
+  return v && disponibles.includes(v) ? v : (disponibles[0] ?? "");
+}
+
+/** El mes anterior CON DATOS, para comparar. No es el mes calendario previo. */
+export function mesAnterior(mes: string, disponibles: string[]): string | null {
+  const i = disponibles.indexOf(mes);
+  return i >= 0 && i + 1 < disponibles.length ? disponibles[i + 1] : null;
+}

@@ -8,7 +8,8 @@
 > `../../memory.md` y `../HANDOFF.md`.
 
 **Última actualización:** 2026-09-08
-**Feature activa:** C9 — Delivery (Rappi). A mitad de camino.
+**Feature activa:** ninguna. C9 (Delivery — Rappi) quedó cerrada.
+**Próxima:** C10 — PedidosYa y Uber, o C11 — identidad visual, según qué llegue antes del cliente.
 **En producción:** https://dashboard-cenfor.vercel.app
 
 ---
@@ -18,36 +19,49 @@
 | Área | Estado |
 |---|---|
 | Reseñas de Google | funcionando, con datos reales |
-| Mystery Shopper | funcionando |
+| Mystery Shopper | funcionando · ahora también lista las visitas de delivery del formulario |
 | Auditorías presenciales | funcionando (el dashboard es el archivo histórico que la planilla no tiene) |
-| Delivery | **a medio hacer** — ver abajo |
+| Delivery | **terminado para Rappi** · PedidosYa y Uber pendientes (C10) |
 | Plan de acción | lugar reservado en el menú, sin definir con el cliente |
 
-Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 6 auditorías.
-Verificado con datos reales el 04/09: Censurado 4,42★ / 832 reseñas · MS 83,9% · auditorías
-77,0%. Formaggio 4,62★ / 301 · MS 78,4% · auditorías "no aplica".
+Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 6 auditorías · 43 filas de
+indicadores de Rappi (julio y agosto 2026) · 225 filas de motivos · 21 puntos de venta activos.
 
 ---
 
-## Lo que está a medio hacer: C9, Delivery de Rappi
+## C9 cerrada: la pantalla de Delivery
 
-**Hecho y probado:** las migraciones del esquema (`sub_brands`, `delivery_points`,
-`delivery_metrics`, `delivery_issues`, con RLS), el seed de 3 marcas B + 21 puntos de venta, el
-parser, **y la integración al sync**. Todo eso quedó commiteado el 08/09 (`a2f5c74`).
+La sección Delivery muestra **los indicadores que publica Rappi**, nada más. Las visitas de
+delivery del mystery shopper se listan en «MS y Auditorías», junto a las de take away y
+promediadas aparte: son otra fuente y otra cosa.
 
-**Verificado en producción el 08/09/2026:** `/api/sync` responde 200 en 7 s con cinco fuentes,
-y `delivery` trae 268 leídas / 268 guardadas, cero descartadas.
+Cinco decisiones que conviene no revertir sin motivo:
 
-**Falta solo la pantalla.**
+- **Selector de mes propio, no el filtro de período del tablero.** El dato de las apps es un
+  cierre mensual. Con «30 días» julio desaparecería entero y agosto quedaría a medias sin que
+  se note. Vive igual en la URL (`?mes=2026-07`), así que la pantalla sigue siendo componente
+  de servidor.
+- **De cada mes se usa la carga con el cierre más reciente, nunca la suma.** Agosto viene
+  cargado dos veces —al 24 y al 31— y la segunda incluye a la primera (verificado: 27 órdenes
+  al 24, 49 al 31). Sumarlas contaría el mes casi dos veces. Está en `delMes()`, en `data.ts`.
+- **La calificación va ponderada por cantidad de reseñas; los porcentajes, en promedio simple,
+  y la pantalla lo dice.** La planilla de Rappi no trae el total de órdenes de cada punto, así
+  que no hay con qué ponderarlos. Derivarlo dividiendo las órdenes con reclamo por su
+  porcentaje da cualquier cosa cuando el porcentaje es cero: antes de inventar un denominador,
+  se declara cómo está hecha la cuenta.
+- **Ningún número está pintado de verde o rojo.** Los umbrales de mystery shopper y auditorías
+  vienen de la planilla del cliente; los de delivery CENFOR no los definió. Un semáforo
+  inventado se lee como criterio del cliente.
+- **Alta Córdoba queda fuera de los promedios y se dice en pantalla.** Es un local cerrado con
+  julio y agosto cargados: aparece con 0% de disponibilidad y hunde el número del grupo con
+  una tienda que ya no existe. `getPuntosDeVenta()` los trae igual —activos e inactivos—
+  porque filtrarlos en la consulta dejaba las filas de indicadores sin nombre en la pantalla.
 
-Tres cosas para tener presentes al retomar:
-
-- **La unidad no es el local, es el punto de venta** (local + marca B + formato + canal):
-  22 puntos sobre 10 locales.
-- **Los períodos son mensuales**, no diarios.
-- **En las pestañas de motivos hay dos cargas de agosto** (cerradas al 24 y al 31). Sumar
-  motivos por mes cuenta agosto dos veces. En `Rappi_Publicado` no pasa: ahí hay un período
-  por mes.
+**Verificado el 08/09/2026** con el build de producción y datos reales: agosto da 4,12★ sobre
+175 reseñas · 4,8% de reclamos (49 órdenes) · 0,4% de cancelaciones · 30,5% de demora · 87,5%
+de disponibilidad · $226.330 compensados, con las variaciones contra julio. Julio abre sin
+comparación, como corresponde. Los dos meses renderizan las 20 y 21 filas de puntos de venta y
+los motivos agrupados.
 
 ---
 
@@ -58,11 +72,9 @@ Tres cosas para tener presentes al retomar:
 
 ## Pendientes
 
-**Esperando definición de Daniela:**
-- **Dos puntos de venta de Rappi sin identificar:** "Censurado - Alta Córdoba" y
-  "Censurado - Olga Orozco 3023". No son ninguno de los 10 locales, y Luuma no aparece en la
-  planilla con ese nombre — alguno de los dos puede ser Luuma. Hoy el sync los descarta y los
-  informa.
+**Esperando definición de Daniela / el cliente:**
+- **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
+  es aceptable. Sin eso la pantalla muestra los números sin semáforo.
 - placeId de Censurado Luuma · umbral de las auditorías · qué mails van en `emails_autorizados`.
 
 **Tareas manuales:**
@@ -70,6 +82,10 @@ Tres cosas para tener presentes al retomar:
   los mails cargados como usuarios de prueba).
 - Avisarle al cliente que las planillas tienen las fechas con el formato roto (usan `AAAA` para
   el año). El sync lo esquiva, pero si alguien exporta o imprime, salen sin año.
+
+**A criterio de Daniela, no son errores:**
+- El Resumen no tiene todavía ninguna tarjeta de delivery. Hoy resume reseñas, mystery shopper
+  y auditorías.
 
 ## Seguridad — las tres claves se rotaron el 08/09/2026
 
@@ -85,9 +101,6 @@ disco**: `_credenciales/` quedó vacía a propósito, con una nota adentro.
 La clave pública del login (`sb_publishable_XFcBwY15c…4AzLwm`) **no se tocó**: no es un secreto,
 viaja al navegador de cualquiera que abra el dashboard.
 
-Verificado con todo lo viejo ya desactivado: `/api/sync` en producción 200, cinco fuentes, 320
-filas; el login carga; el ensayo en seco da 29 · 9 · 8 · 6.
-
 > **Por qué se rotó la de Supabase y el cron:** al rotar la de Google se subió por error al repo
 > un respaldo del `.env.local` (`.env.local.backup-antes-de-rotar`). El `.gitignore` cubría
 > `.env*.local` y ese nombre no matcheaba. El archivo se sacó y el `.gitignore` pasa a ignorar
@@ -99,6 +112,12 @@ filas; el login carga; el ensayo en seco da 29 · 9 · 8 · 6.
 - **Turbopack no anda en esta máquina; webpack sí.** `npm run dev` ya lleva `--webpack`. Si las
   pantallas dan 500 y `/api/sync` responde 200, esa es la firma: panic de Turbopack al compilar
   `globals.css` (`exit code: 0xc0000142`). Reiniciar no lo resuelve.
+- **Next se planta si ya hay un dev server del proyecto corriendo**, aunque se le pase otro
+  puerto («Another next dev server is already running»). Para ver una pantalla sin matar el
+  server de Daniela: `npm run build` y `MODO_DEMO=1 npx next start -p 3101`.
+- **Una consulta de Supabase que falla devuelve `data` en null y la pantalla se dibuja vacía sin
+  decir nada.** Así apareció la primera versión de Delivery, con «21 de 0 puntos de venta» y la
+  columna de nombres vacía. Las consultas nuevas loguean el `error` en el server.
 - **Un secreto en un archivo que no matchea el .gitignore se sube igual.** El patrón `.env*.local` no cubría `.env.local.backup-antes-de-rotar`. Ahora se ignora `.env*` entero. Antes de un `git add -A`, mirar `git status`.
 - **El conector de Google Drive de Claude solo ve los archivos que creó Daniela**, no los
   compartidos con ella. Las planillas se bajan por su URL pública de export. Para leer todas
@@ -108,6 +127,7 @@ filas; el login carga; el ensayo en seco da 29 · 9 · 8 · 6.
 - **El tope de 2 crons diarios de Vercel es por cuenta y se comparte con Papanato.** Por eso el
   sync es una sola ruta con las 4 fuentes adentro y no cinco crons.
 - **Ningún local se identifica solo por su nombre:** "Nueva Córdoba" existe en las dos marcas.
+  Y ningún punto de venta se identifica por su local: Urca tiene tres.
 - Google Cloud no interviene al publicar: solo se actualizan Site URL y Redirect URLs de
   Supabase, porque el navegador va a Google con el `redirect_uri` de Supabase, no con el de
   la app.

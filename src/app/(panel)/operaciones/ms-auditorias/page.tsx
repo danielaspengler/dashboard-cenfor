@@ -35,9 +35,12 @@ export default async function MsAuditoriasPage({
   const auditorias = todasLasAuditorias.filter((a) => enPeriodo(a.audit_date, desde));
 
   const localPorId = new Map(locales.map((l) => [l.id, l]));
-  // Take away y delivery se miden distinto y no se promedian juntos: el
-  // delivery vive en su propia sección.
+  // Las dos experiencias del formulario viven acá, pero NO se promedian
+  // juntas: un pedido por delivery y una visita al salón no miden lo mismo.
+  // (La sección Delivery muestra los indicadores de las apps —Rappi—, que son
+  // otra fuente: no tiene nada que ver con estas visitas.)
   const takeAway = visitas.filter((v) => v.experience_type === "take_away");
+  const deliveryMS = visitas.filter((v) => v.experience_type === "delivery");
   const enRevision = visitas.filter((v) => v.needs_review).length;
 
   return (
@@ -51,10 +54,18 @@ export default async function MsAuditoriasPage({
       <div className="space-y-8 p-7">
         <div className="grid gap-5 md:grid-cols-4">
           <Card>
-            <Dato etiqueta="Visitas take away" valor={takeAway.length} />
+            <Dato
+              etiqueta="Take away"
+              valor={<Puntaje pct={promedioValido(takeAway)} />}
+              detalle={`${takeAway.length} visita${takeAway.length === 1 ? "" : "s"}`}
+            />
           </Card>
           <Card>
-            <Dato etiqueta="Promedio" valor={<Puntaje pct={promedioValido(takeAway)} />} />
+            <Dato
+              etiqueta="Delivery"
+              valor={<Puntaje pct={promedioValido(deliveryMS)} />}
+              detalle={`${deliveryMS.length} visita${deliveryMS.length === 1 ? "" : "s"} · promediadas aparte`}
+            />
           </Card>
           <Card>
             <Dato etiqueta="Auditorías" valor={auditorias.length} detalle="solo Censurado" />
@@ -69,9 +80,13 @@ export default async function MsAuditoriasPage({
         </div>
 
         <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
             Visitas de mystery shopper
           </h2>
+          <p className="mb-3 text-xs text-[var(--color-piedra)]">
+            El formulario tiene dos experiencias, take away y delivery, y las dos se listan acá.
+            La sección Delivery muestra otra cosa: los indicadores que publican las apps.
+          </p>
           <Tabla>
             <thead>
               <tr>

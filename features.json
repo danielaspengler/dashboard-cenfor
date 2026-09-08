@@ -53,12 +53,12 @@
     },
     {
       "id": "C9",
-      "title": "Delivery — Rappi. HECHO: migraciones de esquema (sub_brands, delivery_points, delivery_metrics, delivery_issues, con RLS), seed de 3 marcas B + 21 puntos de venta, y parser probado contra la planilla viva (268 filas, cero descartadas, claves únicas confirmadas). La unidad que se mide es el PUNTO DE VENTA (local + marca B + formato + canal), no el local: 22 puntos sobre 10 locales. Las marcas B (Lomos la Catedral, Burger Club, Woops) son dark kitchens que cocinan dentro de un local y cuelgan del local, no de brands; el formato Turbo de Rappi es un punto de venta aparte que no se suma al local. Los períodos son MENSUALES (julio y agosto 2026), y los indicadores están en las columnas E-Q, no E-P: la Q trae la cantidad de reseñas, necesaria para ponderar la calificación de la P. En las pestañas de motivos hay DOS cargas de agosto (cerradas al 24 y al 31): la clave única incluye period_end, y sumar motivos por mes contaría agosto dos veces. El sync YA lo corre: verificado en producción el 08/09/2026, quinta fuente 'delivery', 268 leídas y 268 guardadas, cero descartadas. FALTA SOLO LA PANTALLA.",
-      "status": "in_progress"
+      "title": "Delivery — Rappi. Esquema, seed, parser y sync corriendo en producción desde el 08/09/2026 (quinta fuente, 268 filas, cero descartadas) + LA PANTALLA, terminada el 08/09/2026. La unidad que se mide es el PUNTO DE VENTA (local + marca B + formato + canal), no el local: 21 activos sobre 10 locales. Las marcas B (Lomos la Catedral, Burger Club, Woops) son dark kitchens que cocinan dentro de un local y cuelgan del local, no de brands; el formato Turbo de Rappi es un punto de venta aparte que no se suma al del local. La pantalla tiene selector de MES propio, no el filtro de período del resto del tablero: el dato es un cierre mensual y con \"30 días\" julio desaparecería entero. Los motivos de agosto vienen cargados dos veces (al 24 y al 31) y la segunda incluye a la primera: se usa el cierre más reciente de cada mes, nunca la suma. Alta Córdoba (cerrado) queda fuera de los promedios y se dice en pantalla.",
+      "status": "done"
     },
     {
       "id": "C10",
-      "title": "Delivery — PedidosYa y Uber: cada uno con su planilla y su parser. Los tres canales de delivery son solo de Censurado. Espera que C9 esté cerrado.",
+      "title": "Delivery — PedidosYa y Uber: cada uno con su planilla y su parser. Los tres canales de delivery son solo de Censurado. La pantalla ya avisa que los dos no están conectados. Woops no vende por Rappi: sus puntos de venta aparecen recién con estos dos canales.",
       "status": "todo"
     },
     {
@@ -78,13 +78,12 @@
     }
   ],
   "_esperando_definicion_de_daniela": [
-    "Dos puntos de venta de Rappi sin identificar: 'Censurado - Alta Córdoba' (aparece en indicadores) y 'Censurado - Olga Orozco 3023' (solo en motivos). No corresponden a ninguno de los 10 locales, y Luuma no aparece en la planilla con ese nombre: alguno de los dos puede ser Luuma. Hasta definirlo, el sync los descarta y los informa.",
+    "Umbrales de delivery: qué porcentaje de reclamos, cancelaciones, demora y disponibilidad es aceptable. Hoy la pantalla muestra los números sin semáforo porque el cliente no los definió — los de mystery shopper y auditorías sí vienen de su planilla.",
     "placeId de Censurado Luuma, el único local sin ficha de Google.",
     "Umbral de aceptación de las auditorías presenciales.",
     "Qué mails van en emails_autorizados (hoy hay uno solo, el de Daniela)."
   ],
   "_tareas_manuales_de_daniela": [
-    "SEGURIDAD: rotar la clave de la cuenta de servicio de Google — se imprimió completa en una conversación el 04/09/2026.",
     "Publicar la app en Google si se quiere abrir al equipo: hoy está en modo Prueba y solo entran los mails cargados como usuarios de prueba (hasta 100).",
     "Avisar al cliente que las tres planillas tienen las fechas con el formato roto (usan AAAA para el año, que Sheets escribe literal: '27/08/AAAA'). El sync lo esquiva leyendo los valores sin formato, pero si alguien exporta o imprime esas planillas, las fechas salen sin año."
   ],
