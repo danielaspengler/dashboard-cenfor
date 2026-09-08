@@ -66,18 +66,40 @@ Tres cosas para tener presentes al retomar:
 - placeId de Censurado Luuma · umbral de las auditorías · qué mails van en `emails_autorizados`.
 
 **Tareas manuales:**
-- **SEGURIDAD: rotar la clave de la cuenta de servicio de Google.** Se imprimió completa en una
-  conversación el 04/09/2026.
 - Publicar la app en Google si se quiere abrir al equipo (hoy está en modo Prueba: solo entran
   los mails cargados como usuarios de prueba).
 - Avisarle al cliente que las planillas tienen las fechas con el formato roto (usan `AAAA` para
   el año). El sync lo esquiva, pero si alguien exporta o imprime, salen sin año.
+
+## Seguridad — las tres claves se rotaron el 08/09/2026
+
+| Clave | Antes | Ahora |
+|---|---|---|
+| Cuenta de servicio de Google | `3c8bf146`, impresa en una conversación el 04/09 | `e9081c5f`, la vieja **borrada** en Google Cloud |
+| `SUPABASE_SERVICE_ROLE_KEY` | legacy JWT (`eyJ…`) | **`sb_secret_…`**; las legacy quedaron **desactivadas** |
+| `CRON_SECRET` | el original | uno nuevo de 43 caracteres |
+
+Las tres están en `.env.local` y en Vercel (Production). **No hay ninguna copia suelta en el
+disco**: `_credenciales/` quedó vacía a propósito, con una nota adentro.
+
+La clave pública del login (`sb_publishable_XFcBwY15c…4AzLwm`) **no se tocó**: no es un secreto,
+viaja al navegador de cualquiera que abra el dashboard.
+
+Verificado con todo lo viejo ya desactivado: `/api/sync` en producción 200, cinco fuentes, 320
+filas; el login carga; el ensayo en seco da 29 · 9 · 8 · 6.
+
+> **Por qué se rotó la de Supabase y el cron:** al rotar la de Google se subió por error al repo
+> un respaldo del `.env.local` (`.env.local.backup-antes-de-rotar`). El `.gitignore` cubría
+> `.env*.local` y ese nombre no matcheaba. El archivo se sacó y el `.gitignore` pasa a ignorar
+> `.env*` entero, pero **el commit anterior sigue en la historia de GitHub**: por eso las claves
+> que estaban ahí adentro se cambiaron todas. El repo es privado.
 
 ## Gotchas acumulados
 
 - **Turbopack no anda en esta máquina; webpack sí.** `npm run dev` ya lleva `--webpack`. Si las
   pantallas dan 500 y `/api/sync` responde 200, esa es la firma: panic de Turbopack al compilar
   `globals.css` (`exit code: 0xc0000142`). Reiniciar no lo resuelve.
+- **Un secreto en un archivo que no matchea el .gitignore se sube igual.** El patrón `.env*.local` no cubría `.env.local.backup-antes-de-rotar`. Ahora se ignora `.env*` entero. Antes de un `git add -A`, mirar `git status`.
 - **El conector de Google Drive de Claude solo ve los archivos que creó Daniela**, no los
   compartidos con ella. Las planillas se bajan por su URL pública de export. Para leer todas
   las pestañas hay que bajar el xlsx y abrirlo con exceljs.
