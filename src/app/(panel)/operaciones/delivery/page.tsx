@@ -15,7 +15,7 @@ import {
 } from "@/lib/delivery";
 import { CANALES } from "@/lib/sync/fuentes";
 import { type Busqueda, etiquetaMes, leerMes, mesAnterior } from "@/lib/filtros";
-import { FiltroCanal, FiltroMes } from "@/components/filtros";
+import { FiltroCanal, FiltroMeses } from "@/components/filtros";
 import { Card, Dato, PageHeader, SinDato, Tabla, Td, Th, Variacion } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -139,7 +139,7 @@ export default async function DeliveryPage({
       extra={
         <div className="flex items-center gap-2">
           <FiltroCanal actual={canal} canales={[...CANALES]} />
-          {meses.length > 1 && <FiltroMes actual={mes} meses={meses} />}
+          <FiltroMeses actual={mes} meses={meses} conTodo={false} />
         </div>
       }
     />

@@ -1,7 +1,7 @@
 import { getAuditorias, getMarcasYLocales, getVisitas, promedioValido } from "@/lib/data";
 import { nivelDe } from "@/lib/marca";
-import { type Busqueda, desdeDe, enPeriodo, leerPeriodo } from "@/lib/filtros";
-import { FiltroPeriodo } from "@/components/filtros";
+import { type Busqueda, enMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
+import { FiltroMeses } from "@/components/filtros";
 import {
   Card,
   Dato,
@@ -29,10 +29,15 @@ export default async function MsAuditoriasPage({
     getAuditorias(),
   ]);
 
-  const periodo = leerPeriodo(filtros.periodo);
-  const desde = desdeDe(periodo);
-  const visitas = todasLasVisitas.filter((v) => enPeriodo(v.visit_date, desde));
-  const auditorias = todasLasAuditorias.filter((a) => enPeriodo(a.audit_date, desde));
+  // Los meses que ofrece el filtro salen de las DOS fuentes de la pantalla:
+  // una visita de un mes sin auditorías igual tiene que poder mirarse.
+  const meses = mesesDeFechas([
+    ...todasLasVisitas.map((v) => v.visit_date),
+    ...todasLasAuditorias.map((a) => a.audit_date),
+  ]);
+  const mes = leerMesFiltro(filtros.mes, meses);
+  const visitas = todasLasVisitas.filter((v) => enMes(v.visit_date, mes));
+  const auditorias = todasLasAuditorias.filter((a) => enMes(a.audit_date, mes));
 
   const localPorId = new Map(locales.map((l) => [l.id, l]));
   // Las dos experiencias del formulario viven acá, pero NO se promedian
@@ -48,7 +53,7 @@ export default async function MsAuditoriasPage({
       <PageHeader
         titulo="Mystery Shopper y Auditorías"
         bajada="Puntajes calculados por las planillas del cliente · Excelente ≥90 · Bueno ≥75 · Regular ≥60"
-        extra={<FiltroPeriodo actual={periodo} />}
+        extra={<FiltroMeses actual={mes} meses={meses} />}
       />
 
       <div className="space-y-8 p-7">

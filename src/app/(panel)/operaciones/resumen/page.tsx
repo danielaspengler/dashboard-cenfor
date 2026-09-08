@@ -8,14 +8,15 @@ import {
 } from "@/lib/data";
 import { MARCA } from "@/lib/marca";
 import {
+  MES_TODO,
   type Busqueda,
-  desdeDe,
-  enPeriodo,
-  etiquetaDe,
+  enMes,
+  etiquetaMes,
   leerMarca,
-  leerPeriodo,
+  leerMesFiltro,
+  mesesDeFechas,
 } from "@/lib/filtros";
-import { FiltroMarca, FiltroPeriodo } from "@/components/filtros";
+import { FiltroMarca, FiltroMeses } from "@/components/filtros";
 import { Card, Dato, PageHeader, Puntaje, SinDato, Tabla, Td, Th, fechaCorta } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -34,17 +35,25 @@ export default async function ResumenPage({
     getAuditorias(),
   ]);
 
-  const periodo = leerPeriodo(filtros.periodo);
-  const desde = desdeDe(periodo);
   const marcaElegida = leerMarca(filtros.marca, marcas.map((m) => m.slug));
 
-  // El período recorta las visitas y las auditorías, que son hechos con
-  // fecha. NO recorta el acumulado de Google: ese número es el total
-  // histórico de la ficha, no una suma de reseñas del período, y filtrarlo
-  // daría un promedio que no existe en ninguna parte.
-  const visitasEnPeriodo = visitas.filter((v) => enPeriodo(v.visit_date, desde));
-  const auditoriasEnPeriodo = auditorias.filter((a) => enPeriodo(a.audit_date, desde));
-  const resenasEnPeriodo = resenas.filter((r) => enPeriodo(r.review_date, desde));
+  // El Resumen junta las tres fuentes con fecha, así que ofrece los meses de
+  // las tres: es la portada del área y tiene que poder abrir cualquier mes que
+  // alguna sección tenga cargado.
+  const meses = mesesDeFechas([
+    ...visitas.map((v) => v.visit_date),
+    ...auditorias.map((a) => a.audit_date),
+    ...resenas.map((r) => r.review_date),
+  ]);
+  const mes = leerMesFiltro(filtros.mes, meses);
+
+  // El mes recorta las visitas, las auditorías y las reseñas, que son hechos
+  // con fecha. NO recorta el acumulado de Google: ese número es el total
+  // histórico de la ficha, no una suma de reseñas del mes, y filtrarlo daría
+  // un promedio que no existe en ninguna parte.
+  const visitasDelMes = visitas.filter((v) => enMes(v.visit_date, mes));
+  const auditoriasDelMes = auditorias.filter((a) => enMes(a.audit_date, mes));
+  const resenasDelMes = resenas.filter((r) => enMes(r.review_date, mes));
 
   const marcasVisibles = marcas.filter((m) => marcaElegida === "todas" || m.slug === marcaElegida);
   const idsVisibles = new Set(
@@ -65,8 +74,8 @@ export default async function ResumenPage({
       ? fotos.reduce((a, f) => a + (f!.total_score ?? 0) * (f!.reviews_count ?? 0), 0) / total
       : null;
 
-    const visitasMarca = visitasEnPeriodo.filter((v) => v.location_id && ids.has(v.location_id));
-    const auditoriasMarca = auditoriasEnPeriodo.filter(
+    const visitasMarca = visitasDelMes.filter((v) => v.location_id && ids.has(v.location_id));
+    const auditoriasMarca = auditoriasDelMes.filter(
       (a) => a.location_id && ids.has(a.location_id),
     );
 
@@ -75,7 +84,7 @@ export default async function ResumenPage({
       locales: suyos,
       google,
       totalResenas: total,
-      resenasNuevas: resenasEnPeriodo.filter((r) => r.location_id && ids.has(r.location_id)).length,
+      resenasNuevas: resenasDelMes.filter((r) => r.location_id && ids.has(r.location_id)).length,
       msPromedio: promedioValido(visitasMarca),
       msCantidad: visitasMarca.length,
       msEnRevision: visitasMarca.filter((v) => v.needs_review).length,
@@ -106,7 +115,7 @@ export default async function ResumenPage({
                 color: MARCA.marcas[m.slug as keyof typeof MARCA.marcas]?.color ?? "#1c1c1a",
               }))}
             />
-            <FiltroPeriodo actual={periodo} />
+            <FiltroMeses actual={mes} meses={meses} />
           </div>
         }
       />
@@ -181,8 +190,8 @@ export default async function ResumenPage({
             <tbody>
               {localesVisibles.map((l) => {
                 const foto = snapshots.get(l.id);
-                const suyas = visitasEnPeriodo.filter((v) => v.location_id === l.id);
-                const ultima = auditoriasEnPeriodo.find((a) => a.location_id === l.id);
+                const suyas = visitasDelMes.filter((v) => v.location_id === l.id);
+                const ultima = auditoriasDelMes.find((a) => a.location_id === l.id);
                 const color =
                   MARCA.marcas[
                     (marcas.find((m) => m.id === l.brand_id)?.slug ??
@@ -230,11 +239,11 @@ export default async function ResumenPage({
           <p className="mt-2 text-xs text-[var(--color-piedra)]">
             Formaggio no tiene auditorías presenciales. Un local sin ficha de Google no tiene
             reseñas cargadas — no es un cero.
-            {periodo !== "todo" && (
+            {mes !== MES_TODO && (
               <>
                 {" "}
                 Mystery shopper y auditorías muestran{" "}
-                <strong className="font-medium">{etiquetaDe(periodo).toLowerCase()}</strong>; la
+                <strong className="font-medium">{etiquetaMes(mes).toLowerCase()}</strong>; la
                 columna Google es el acumulado histórico de la ficha y no se filtra por fecha.
               </>
             )}

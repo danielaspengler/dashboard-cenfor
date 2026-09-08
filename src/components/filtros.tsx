@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PERIODOS, etiquetaMes } from "@/lib/filtros";
+import { MES_TODO, etiquetaMes } from "@/lib/filtros";
 
 // Los únicos componentes de cliente del tablero, además del menú. Solo
 // escriben el filtro en la URL: quien vuelve a calcular es el servidor.
@@ -61,17 +61,59 @@ function useCambiarParam() {
   };
 }
 
-export function FiltroPeriodo({ actual }: { actual: string }) {
+/**
+ * El filtro de fecha del tablero: "Todo" y un mes calendario.
+ *
+ * Es el MISMO control en las cinco pantallas. Cada una le pasa los meses que
+ * ella tiene cargados, así nunca se ofrece un mes que va a salir vacío.
+ *
+ * `conTodo` en false lo usa Delivery: lo que publican las apps son cierres
+ * mensuales, y "Todo" tendría que promediar agosto con julio.
+ *
+ * Con muchos meses una fila de botones no entra, así que a partir de seis pasa
+ * a ser un `select`. Es el mismo filtro con otra forma, no otro filtro: hoy
+ * son dos o tres meses y se ven todos de una.
+ */
+export function FiltroMeses({
+  actual,
+  meses,
+  conTodo = true,
+}: {
+  actual: string;
+  meses: string[];
+  conTodo?: boolean;
+}) {
   const cambiar = useCambiarParam();
+  const opciones = conTodo ? [MES_TODO, ...meses] : meses;
+  // Un solo mes y sin "Todo" no es una elección: no se dibuja el control.
+  if (opciones.length <= 1) return null;
+
+  // El default no se escribe en la URL: sin parámetros y con el default puesto
+  // tienen que ser la misma dirección.
+  const porDefecto = conTodo ? MES_TODO : meses[0];
+
+  if (opciones.length > 6) {
+    return (
+      <select
+        value={actual}
+        onChange={(e) => cambiar("mes", e.target.value, e.target.value === porDefecto)}
+        aria-label="Mes"
+        className="rounded-lg border border-[var(--color-borde)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-tinta)]"
+      >
+        {opciones.map((m) => (
+          <option key={m} value={m}>
+            {etiquetaMes(m)}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   return (
     <Grupo>
-      {PERIODOS.map((p) => (
-        <Boton
-          key={p.id}
-          activo={actual === p.id}
-          onClick={() => cambiar("periodo", p.id, p.id === "todo")}
-        >
-          {p.label}
+      {opciones.map((m) => (
+        <Boton key={m} activo={actual === m} onClick={() => cambiar("mes", m, m === porDefecto)}>
+          {etiquetaMes(m)}
         </Boton>
       ))}
     </Grupo>
@@ -105,36 +147,6 @@ export function FiltroMarca({
   );
 }
 
-/**
- * Selector de mes de Delivery.
- *
- * Es un `select` y no botones como los otros filtros porque la lista crece un
- * mes por mes: hoy son dos, en un año son doce y una fila de botones no entra.
- */
-export function FiltroMes({ actual, meses }: { actual: string; meses: string[] }) {
-  const cambiar = useCambiarParam();
-  if (meses.length <= 1) return null;
-
-  return (
-    <select
-      value={actual}
-      onChange={(e) => cambiar("mes", e.target.value, e.target.value === meses[0])}
-      aria-label="Mes"
-      className="rounded-lg border border-[var(--color-borde)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-tinta)]"
-    >
-      {meses.map((m) => (
-        <option key={m} value={m}>
-          {etiquetaMes(m)}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-/**
- * Canal de delivery. Botones y no un select como el de mes: son tres y no
- * crecen — es el mapa de la seccion, conviene verlo entero.
- */
 export function FiltroCanal({
   actual,
   canales,

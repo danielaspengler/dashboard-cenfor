@@ -1,7 +1,7 @@
 import { getMarcasYLocales, getResenas, getUltimosSnapshots, promedioResenas } from "@/lib/data";
 import { MARCA, nivelResena } from "@/lib/marca";
-import { type Busqueda, desdeDe, enPeriodo, etiquetaDe, leerPeriodo } from "@/lib/filtros";
-import { FiltroPeriodo } from "@/components/filtros";
+import { MES_TODO, type Busqueda, enMes, etiquetaMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
+import { FiltroMeses } from "@/components/filtros";
 import { Card, Dato, PageHeader, SinDato, Tabla, Td, Th, fechaCorta } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +18,11 @@ export default async function ResenasPage({
     getUltimosSnapshots(),
   ]);
 
-  const periodo = leerPeriodo(filtros.periodo);
-  const desde = desdeDe(periodo);
-  // El período recorta las reseñas nuevas, que tienen fecha. El acumulado de
-  // la ficha de Google es el total histórico del local y queda como está.
-  const resenas = todasLasResenas.filter((r) => enPeriodo(r.review_date, desde));
+  // El mes recorta las reseñas nuevas, que tienen fecha. El acumulado de la
+  // ficha de Google es el total histórico del local y queda como está.
+  const meses = mesesDeFechas(todasLasResenas.map((r) => r.review_date));
+  const mes = leerMesFiltro(filtros.mes, meses);
+  const resenas = todasLasResenas.filter((r) => enMes(r.review_date, mes));
 
   const localPorId = new Map(locales.map((l) => [l.id, l]));
   const promedioNuevas = promedioResenas(resenas);
@@ -43,7 +43,7 @@ export default async function ResenasPage({
       <PageHeader
         titulo="Puntuaciones y reseñas"
         bajada="Google Maps · acumulado histórico y reseñas recientes"
-        extra={<FiltroPeriodo actual={periodo} />}
+        extra={<FiltroMeses actual={mes} meses={meses} />}
       />
 
       <div className="space-y-8 p-7">
@@ -60,9 +60,7 @@ export default async function ResenasPage({
               etiqueta="Reseñas recientes"
               valor={resenas.length}
               detalle={
-                periodo === "todo"
-                  ? "las que trajo el scraper"
-                  : etiquetaDe(periodo).toLowerCase()
+                mes === MES_TODO ? "las que trajo el scraper" : etiquetaMes(mes).toLowerCase()
               }
             />
           </Card>
@@ -164,7 +162,7 @@ export default async function ResenasPage({
             {resenas.length === 0 && (
               <Card className="p-4">
                 <SinDato>
-                  No hay reseñas en {etiquetaDe(periodo).toLowerCase()}. El acumulado de arriba
+                  No hay reseñas en {etiquetaMes(mes).toLowerCase()}. El acumulado de arriba
                   no cambia: es el histórico de la ficha de Google.
                 </SinDato>
               </Card>

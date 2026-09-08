@@ -1,4 +1,4 @@
-// Los filtros del tablero viven en la URL (`?periodo=90d&marca=censurado`).
+// Los filtros del tablero viven en la URL (`?mes=2026-08&marca=censurado`).
 //
 // Por qué en la URL y no en un estado de React: las pantallas son componentes
 // de servidor que ya leen de Supabase. Con el filtro en la URL siguen siéndolo
@@ -7,57 +7,90 @@
 //
 // Un valor desconocido nunca rompe la pantalla: cae en el default.
 
-export type Periodo = "todo" | "30d" | "90d" | "anio";
+// ── Mes ──────────────────────────────────────────────────────────────────
+//
+// El tablero se mira POR MES, no por ventanas móviles.
+//
+// Antes el filtro era Todo / 30 días / 90 días / Este año, y tenía dos
+// problemas. Uno, que "30 días" es un recorte que se mueve solo: el mismo link
+// muestra otra cosa la semana que viene, y una visita del 5 de agosto entra o
+// sale según el día en que se mire. Dos, que los datos de delivery son cierres
+// mensuales y no entraban en ese molde, así que esa sección tenía su propio
+// filtro y el tablero hablaba dos idiomas.
+//
+// Ahora es uno solo: "Todo" o un mes calendario. Cada sección ofrece los meses
+// que ella tiene cargados —Auditorías solo agosto, Delivery julio y agosto—,
+// así nunca se elige un mes que va a salir vacío.
 
-export const PERIODOS: { id: Periodo; label: string }[] = [
-  { id: "todo", label: "Todo" },
-  { id: "30d", label: "30 días" },
-  { id: "90d", label: "90 días" },
-  { id: "anio", label: "Este año" },
+export const MES_TODO = "todo";
+
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
+/** "2026-08" → "Agosto 2026". "todo" → "Todo". */
+export function etiquetaMes(mes: string): string {
+  if (mes === MES_TODO) return "Todo";
+  const [anio, m] = mes.split("-");
+  return `${MESES[Number(m) - 1] ?? m} ${anio}`;
+}
+
+/** Los meses que aparecen en una lista de fechas, del más nuevo al más viejo. */
+export function mesesDeFechas(fechas: (string | null | undefined)[]): string[] {
+  const meses = new Set<string>();
+  for (const f of fechas) if (f) meses.add(f.slice(0, 7));
+  return [...meses].sort().reverse();
+}
+
 /**
+ * El mes elegido, o "todo".
+ *
  * "Todo" es el default a propósito. Hoy hay 29 reseñas, 8 visitas y 6
- * auditorías, casi todas de un mismo mes: si el tablero abriera filtrado en
- * 30 días, la primera impresión sería un tablero vacío.
+ * auditorías repartidas en dos o tres meses: si el tablero abriera filtrado en
+ * uno, la primera impresión sería un tablero medio vacío.
+ *
+ * Un mes que no está entre los disponibles —una URL vieja, un parámetro
+ * escrito a mano— cae en "Todo" en vez de mostrar una pantalla en blanco.
  */
-export const PERIODO_POR_DEFECTO: Periodo = "todo";
-
-export function leerPeriodo(valor: string | string[] | undefined): Periodo {
+export function leerMesFiltro(
+  valor: string | string[] | undefined,
+  disponibles: string[],
+): string {
   const v = Array.isArray(valor) ? valor[0] : valor;
-  return PERIODOS.some((p) => p.id === v) ? (v as Periodo) : PERIODO_POR_DEFECTO;
+  return v && disponibles.includes(v) ? v : MES_TODO;
 }
 
 /**
- * Fecha desde la que cuenta el período, como "YYYY-MM-DD", o null para "todo".
- * Se compara como texto contra las fechas de la base, que ya vienen en ese
- * formato: alcanza y evita líos de zona horaria.
- */
-export function desdeDe(periodo: Periodo, hoy = new Date()): string | null {
-  if (periodo === "todo") return null;
-  if (periodo === "anio") return `${hoy.getFullYear()}-01-01`;
-  const dias = periodo === "30d" ? 30 : 90;
-  const d = new Date(hoy);
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().slice(0, 10);
-}
-
-/**
- * ¿Esta fila entra en el período?
+ * ¿Esta fila entra en el mes elegido?
  *
  * Una fila **sin fecha entra siempre**. Las planillas de CENFOR tienen el
  * formato de fecha roto y algún día puede llegar una fila sin fecha legible;
  * esconderla detrás de un filtro la haría desaparecer sin que nadie se entere.
  * Mejor que se vea de más y no de menos.
  */
-export function enPeriodo(fecha: string | null | undefined, desde: string | null): boolean {
-  if (!desde) return true;
+export function enMes(fecha: string | null | undefined, mes: string): boolean {
+  if (mes === MES_TODO) return true;
   if (!fecha) return true;
-  return fecha >= desde;
+  return fecha.slice(0, 7) === mes;
 }
 
-export function etiquetaDe(periodo: Periodo): string {
-  return PERIODOS.find((p) => p.id === periodo)?.label ?? "Todo";
+// ── Delivery: mes obligatorio ────────────────────────────────────────────
+//
+// Delivery usa el mismo control pero SIN "Todo": lo que publica cada app es un
+// cierre mensual. "Todo" tendría que promediar agosto con julio, y el promedio
+// de dos cierres no es un número que exista en ninguna app.
+
+/** El mes elegido, o el más reciente con datos. `disponibles` viene del más nuevo al más viejo. */
+export function leerMes(valor: string | string[] | undefined, disponibles: string[]): string {
+  const v = Array.isArray(valor) ? valor[0] : valor;
+  return v && disponibles.includes(v) ? v : (disponibles[0] ?? "");
+}
+
+/** El mes anterior CON DATOS, para comparar. No es el mes calendario previo. */
+export function mesAnterior(mes: string, disponibles: string[]): string | null {
+  const i = disponibles.indexOf(mes);
+  return i >= 0 && i + 1 < disponibles.length ? disponibles[i + 1] : null;
 }
 
 // ── Marca ────────────────────────────────────────────────────────────────
@@ -77,39 +110,3 @@ export function leerMarca(
 
 /** Lo que las páginas reciben de Next, ya normalizado. */
 export type Busqueda = Record<string, string | string[] | undefined>;
-
-// ── Mes ──────────────────────────────────────────────────────────────────
-//
-// Delivery tiene su propio filtro y no usa el de período. Los datos de las
-// apps son un CIERRE MENSUAL, no una serie de fechas: con "30 días" julio
-// desaparecería entero y agosto quedaría a medias sin que nadie lo note.
-// Un mes entra completo o no entra.
-
-const MESES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
-
-/** "2026-08" → "Agosto 2026" */
-export function etiquetaMes(mes: string): string {
-  const [anio, m] = mes.split("-");
-  return `${MESES[Number(m) - 1] ?? m} ${anio}`;
-}
-
-/**
- * El mes elegido, o el más reciente con datos.
- *
- * `disponibles` viene ordenado del más nuevo al más viejo. Un mes que no está
- * en la lista —una URL vieja, un parámetro a mano— cae en el más reciente en
- * vez de mostrar una pantalla vacía.
- */
-export function leerMes(valor: string | string[] | undefined, disponibles: string[]): string {
-  const v = Array.isArray(valor) ? valor[0] : valor;
-  return v && disponibles.includes(v) ? v : (disponibles[0] ?? "");
-}
-
-/** El mes anterior CON DATOS, para comparar. No es el mes calendario previo. */
-export function mesAnterior(mes: string, disponibles: string[]): string | null {
-  const i = disponibles.indexOf(mes);
-  return i >= 0 && i + 1 < disponibles.length ? disponibles[i + 1] : null;
-}

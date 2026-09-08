@@ -64,10 +64,9 @@ Decisiones que conviene no revertir sin motivo:
   duración siempre en minutos. La unidad la declara el catálogo, y se resolvió leyendo los
   valores FORMATEADOS de cada planilla: sin formato, `0:01:28` de Uber y `44,9%` de PedidosYa
   son la misma fracción, y las dos columnas se llaman "Tiempo de espera evitable".
-- **Selector de mes propio, no el filtro de período del tablero.** El dato de las apps es un
-  cierre mensual. Con «30 días» julio desaparecería entero y agosto quedaría a medias sin que
-  se note. Vive igual en la URL (`?canal=uber&mes=2026-07`), así que la pantalla sigue siendo
-  componente de servidor.
+- **Delivery usa el filtro de meses del tablero, pero sin «Todo».** Lo que publican las apps
+  son cierres mensuales: «Todo» tendría que promediar agosto con julio, y el promedio de dos
+  cierres no es un número que exista en ninguna app.
 - **De cada mes se usa la carga con el cierre más reciente, nunca la suma.** Agosto de Rappi
   viene cargado dos veces —al 24 y al 31— y la segunda incluye a la primera (27 órdenes al 24,
   49 al 31). Está en `delMes()`, en `delivery.ts`.
@@ -90,6 +89,30 @@ La migración de Rappi al modelo nuevo se comparó **antes** de borrar la tabla 
 agregados de agosto —reclamos 4,8150 · cancelaciones 0,3905 · demora 32,0055 · disponibilidad
 91,9240 · calificación 4,1200 · 175 reseñas · $226.330— dieron idénticos hasta el cuarto
 decimal calculados con las columnas y con el catálogo.
+
+---
+
+## El filtro de fecha es uno solo, y es por mes
+
+Las cinco pantallas usan el mismo control: **«Todo» y un mes calendario**. Reemplazó al de
+Todo / 30 días / 90 días / Este año el 08/09/2026, a pedido de Daniela.
+
+Por qué: «30 días» es un recorte que se mueve solo —el mismo link muestra otra cosa la semana
+que viene, y una visita del 5 de agosto entra o sale según el día en que se mire—, y los datos
+de delivery son cierres mensuales que no entraban en ese molde, así que esa sección tenía su
+propio filtro y el tablero hablaba dos idiomas.
+
+**Cada sección ofrece solo los meses que ella tiene cargados**, así nunca se elige un mes que
+va a salir vacío: Reseñas agosto y septiembre, MS y Auditorías solo agosto, Delivery julio y
+agosto. El menú arrastra el mes al cambiar de sección y, si esa sección no lo tiene, cae en
+«Todo» en vez de mostrar una pantalla en blanco.
+
+«Todo» sigue siendo el default: con 29 reseñas y 8 visitas repartidas en dos o tres meses,
+abrir filtrado por uno daría una primera impresión de tablero medio vacío.
+
+El componente es `FiltroMeses` y pasa a `select` cuando hay más de seis meses, que es cuando
+una fila de botones deja de entrar. Verificado el 08/09/2026: 27 reseñas en agosto + 2 en
+septiembre = las 29 de «Todo».
 
 ---
 
