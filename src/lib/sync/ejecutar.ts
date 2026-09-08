@@ -4,11 +4,13 @@ import { aTimestampISO } from "@/lib/parsers/comunes";
 import { parseResenas, parseSnapshot } from "@/lib/parsers/resenas";
 import { parseMysteryShopper } from "@/lib/parsers/mystery";
 import { esPestañaDeAuditoria, parseAuditorias, rangosDe } from "@/lib/parsers/auditorias";
-import { HOJAS, PLANILLAS, type Fuente } from "./fuentes";
+import { parseDeliveryIssues, parseDeliveryMetrics } from "@/lib/parsers/delivery";
+import { CANALES_DELIVERY, HOJAS, PLANILLAS, type Fuente } from "./fuentes";
 import {
   cargarDirectorio,
   localPorAuditoria,
   localPorFormularioMS,
+  puntoDelivery,
   type Directorio,
 } from "./locales";
 
@@ -220,6 +222,113 @@ async function syncAuditorias(
   };
 }
 
+async function syncDelivery(
+  supabase: SupabaseClient,
+  dir: Directorio,
+): Promise<ReporteFuente> {
+  // Un canal por planilla. Hoy solo Rappi; PedidosYa y Uber entran sumando
+  // su entrada a CANALES_DELIVERY, sin tocar esta función.
+  let leidas = 0;
+  const descartadas: Descarte[] = [];
+  const metricas: Record<string, unknown>[] = [];
+  const motivos: Record<string, unknown>[] = [];
+
+  for (const { canal, planilla, hojas } of CANALES_DELIVERY) {
+    const punto = (etiqueta: string) => puntoDelivery(dir, canal, etiqueta);
+
+    const valores = await fetchSheetValues(planilla, hojas.metricas);
+    leidas += Math.max(0, valores.length - 1);
+    const met = parseDeliveryMetrics(valores);
+    descartadas.push(...met.descartadas);
+
+    for (const m of met.filas) {
+      const delivery_point_id = punto(m.sheetLabel);
+      if (!delivery_point_id) {
+        descartadas.push({
+          motivo: `punto de venta sin equivalencia en ${canal}`,
+          detalle: m.sheetLabel,
+        });
+        continue;
+      }
+      metricas.push({
+        delivery_point_id,
+        period_start: m.periodStart,
+        period_end: m.periodEnd,
+        cancelaciones_pct: m.cancelacionesPct,
+        ordenes_canceladas: m.ordenesCanceladas,
+        reclamos_pct: m.reclamosPct,
+        ordenes_con_reclamos: m.ordenesConReclamos,
+        ordenes_mal_estado: m.ordenesMalEstado,
+        ordenes_producto_diferente: m.ordenesProductoDiferente,
+        ordenes_producto_faltante: m.ordenesProductoFaltante,
+        disponibilidad_pct: m.disponibilidadPct,
+        ordenes_con_demora_pct: m.ordenesConDemoraPct,
+        compensacion_pagada: m.compensacionPagada,
+        reclamos_con_compensacion: m.reclamosConCompensacion,
+        calificacion_promedio: m.calificacionPromedio,
+        cantidad_resenas: m.cantidadResenas,
+        source_file_id: m.sourceFileId,
+      });
+    }
+
+    for (const [hoja, scope] of [
+      [hojas.motivosOrdenes, "orden"],
+      [hojas.motivosProductos, "producto"],
+    ] as const) {
+      const filas = await fetchSheetValues(planilla, hoja);
+      leidas += Math.max(0, filas.length - 1);
+      const res = parseDeliveryIssues(filas, scope);
+      descartadas.push(...res.descartadas);
+
+      for (const i of res.filas) {
+        const delivery_point_id = punto(i.sheetLabel);
+        if (!delivery_point_id) {
+          descartadas.push({
+            motivo: `punto de venta sin equivalencia en ${canal}`,
+            detalle: `${i.sheetLabel} (${hoja})`,
+          });
+          continue;
+        }
+        motivos.push({
+          delivery_point_id,
+          period_start: i.periodStart,
+          period_end: i.periodEnd,
+          scope: i.scope,
+          motivo: i.motivo,
+          detalle: i.detalle,
+          producto: i.producto,
+          cantidad_ordenes: i.cantidadOrdenes,
+          source_file_id: i.sourceFileId,
+        });
+      }
+    }
+  }
+
+  await guardar(
+    supabase,
+    "delivery_metrics",
+    metricas,
+    "delivery_point_id,period_start,period_end",
+  );
+  // El período completo entra en la clave: la planilla trae dos cargas de
+  // agosto —cerrada al 24 y al 31— y sin el fin la segunda pisaría a la
+  // primera.
+  await guardar(
+    supabase,
+    "delivery_issues",
+    motivos,
+    "delivery_point_id,period_start,period_end,scope,motivo,detalle,producto",
+  );
+
+  return {
+    fuente: "delivery",
+    ok: true,
+    leidas,
+    guardadas: metricas.length + motivos.length,
+    descartadas,
+  };
+}
+
 const CORREDORES: Record<
   Fuente,
   (s: SupabaseClient, d: Directorio) => Promise<ReporteFuente>
@@ -228,6 +337,7 @@ const CORREDORES: Record<
   snapshots: syncSnapshots,
   mystery: syncMystery,
   auditorias: syncAuditorias,
+  delivery: syncDelivery,
 };
 
 /**
