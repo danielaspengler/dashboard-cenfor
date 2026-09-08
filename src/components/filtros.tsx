@@ -130,3 +130,30 @@ export function FiltroMes({ actual, meses }: { actual: string; meses: string[] }
     </select>
   );
 }
+
+/**
+ * Canal de delivery. Botones y no un select como el de mes: son tres y no
+ * crecen — es el mapa de la seccion, conviene verlo entero.
+ */
+export function FiltroCanal({
+  actual,
+  canales,
+}: {
+  actual: string;
+  canales: { id: string; nombre: string }[];
+}) {
+  const cambiar = useCambiarParam();
+  return (
+    <Grupo>
+      {canales.map((c, i) => (
+        <Boton
+          key={c.id}
+          activo={actual === c.id}
+          onClick={() => cambiar("canal", c.id, i === 0)}
+        >
+          {c.nombre}
+        </Boton>
+      ))}
+    </Grupo>
+  );
+}

@@ -1,4 +1,4 @@
-// Las cuatro planillas de CENFOR en Google Drive.
+// Las seis planillas de CENFOR en Google Drive.
 //
 // Van en el código y no en variables de entorno a propósito: son parte de la
 // definición del sync, no de la configuración del ambiente. Si el cliente
@@ -13,6 +13,8 @@ export const PLANILLAS = {
   msCensurado: "1qFA7u1Ztj498E80qcp5CzvsDppyFcowVnCR8lR-Rgq4",
   auditorias: "1iw9bqR5cz9GLo29agblb3mZKJ71XdG0eUBMgqeHl7XM",
   deliveryRappi: "1axROvefosXxlhCiCqK9iTj4ulPaOvM-gMxYw2jirzjU",
+  deliveryUber: "1ywM7qEAjxn75CEd3Q4av8wF4TLl0dpv7YvKWdE7PoEk",
+  deliveryPedidosYa: "1l_ktEtd39w53NAuTDyFszLWIrWbyWTScsRlb_8XHkIk",
 } as const;
 
 /** Hoja de la que sale cada cosa. */
@@ -25,10 +27,18 @@ export const HOJAS = {
 /**
  * Canales de delivery. Solo Censurado vende por app.
  *
- * Cada canal tiene su planilla y sus hojas porque cada app arma los archivos
- * a su manera: lo que Rappi llama "Punto de venta" en PedidosYa se llama de
- * otro modo. Rappi es el único relevado al 07/09/2026; los otros dos entran
- * cuando se releven, agregando su entrada acá.
+ * Cada canal tiene su planilla, su hoja y sus nombres de columna, porque cada
+ * app arma los archivos a su manera: lo que Rappi llama "Punto de venta", las
+ * otras dos lo llaman "Tienda". QUÉ indicadores tiene cada uno no está acá:
+ * vive en `delivery_metric_defs`, en la base, para que sumar un indicador no
+ * sea tocar código.
+ *
+ * El período también viene distinto. Rappi cierra por rango, con dos columnas
+ * —agosto está cargado dos veces, al 24 y al 31—. Uber y PedidosYa traen un
+ * mes solo, que el parser expande al mes completo.
+ *
+ * Los motivos de reclamo son propios de Rappi: las otras dos apps no los
+ * publican.
  */
 export const CANALES_DELIVERY = [
   {
@@ -39,8 +49,30 @@ export const CANALES_DELIVERY = [
       motivosOrdenes: "Rappi_Motivos_Ordenes",
       motivosProductos: "Rappi_Motivos_Productos",
     },
+    columnas: { punto: "Punto de venta", inicio: "Período inicio", fin: "Período fin" },
+  },
+  {
+    canal: "pedidos_ya",
+    planilla: PLANILLAS.deliveryPedidosYa,
+    hojas: { metricas: "Metricas_unificadas_CENFOR" },
+    columnas: { punto: "Tienda", mes: "Fecha mes" },
+  },
+  {
+    canal: "uber",
+    planilla: PLANILLAS.deliveryUber,
+    hojas: { metricas: "Hoja 1" },
+    columnas: { punto: "Tienda", mes: "Periodo" },
   },
 ] as const;
+
+/** Cómo se muestra cada canal. El orden es el de los botones del filtro. */
+export const CANALES = [
+  { id: "rappi", nombre: "Rappi" },
+  { id: "pedidos_ya", nombre: "PedidosYa" },
+  { id: "uber", nombre: "Uber" },
+] as const;
+
+export type Canal = (typeof CANALES)[number]["id"];
 
 /** Las fuentes que el sync sabe correr. `?fuente=` acepta cualquiera de estas. */
 export const FUENTES = [

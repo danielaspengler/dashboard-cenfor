@@ -58,8 +58,8 @@
     },
     {
       "id": "C10",
-      "title": "Delivery — PedidosYa y Uber: cada uno con su planilla y su parser. Los tres canales de delivery son solo de Censurado. La pantalla ya avisa que los dos no están conectados. Woops no vende por Rappi: sus puntos de venta aparecen recién con estos dos canales.",
-      "status": "todo"
+      "title": "Delivery — PedidosYa y Uber. Los indicadores dejaron de ser columnas y pasaron a un CATALOGO en la base (delivery_metric_defs + delivery_metric_values): cada canal declara que mide, con su unidad y el encabezado exacto de su planilla, y un solo parser lee las tres. Los 43 registros de Rappi se migraron y delivery_metrics se borro despues de verificar que los siete agregados de agosto daban identicos hasta el cuarto decimal. 36 indicadores, 46 puntos de venta (22 Rappi + 16 PedidosYa + 8 Uber), 884 valores. Woops aparece en PedidosYa: no vende por Rappi. La pantalla filtra por canal y cada uno muestra SUS indicadores con SUS nombres — no hay vista combinada, porque solo la disponibilidad y la calificacion existen en los tres y cada app las define distinto (Rappi mide disponibilidad, Uber tiempo en linea, PedidosYa hora no disponible, que es el concepto invertido).",
+      "status": "done"
     },
     {
       "id": "C11",
@@ -78,6 +78,8 @@
     }
   ],
   "_esperando_definicion_de_daniela": [
+    "\"Tiempo de espera evitable\" NO significa lo mismo en Uber (una duracion, 0:01:28) que en PedidosYa (un porcentaje, 44,9%), aunque la columna se llame igual. Conviene confirmar con cada app que se esta leyendo lo que se cree.",
+    "Woops Nueva Cordoba (PedidosYa) trae 100% de cancelacion evitable en agosto con score \"-\", 0 evaluaciones y 0% de pedidos listos: parece una tienda sin actividad. Ella sola lleva el promedio de las 16 tiendas de 0% a 6,3%. Hay que confirmar con el cliente si opero.",
     "Umbrales de delivery: qué porcentaje de reclamos, cancelaciones, demora y disponibilidad es aceptable. Hoy la pantalla muestra los números sin semáforo porque el cliente no los definió — los de mystery shopper y auditorías sí vienen de su planilla.",
     "placeId de Censurado Luuma, el único local sin ficha de Google.",
     "Umbral de aceptación de las auditorías presenciales.",

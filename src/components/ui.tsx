@@ -121,22 +121,27 @@ export function fechaCorta(iso: string | null | undefined) {
 }
 
 /**
- * Variación contra el período anterior, en puntos porcentuales.
+ * Variación contra el período anterior.
  *
  * El color no lo decide el signo: en cancelaciones o reclamos bajar es bueno
  * y en disponibilidad es malo. De ahí `mejorSiBaja`. Una variación de menos
  * de una décima se muestra como "sin cambios" en vez de un 0,0 con flecha,
  * que se lee como un movimiento que no existió.
+ *
+ * `escribir` la escribe con la unidad del indicador. Sin eso, la caída de la
+ * hora no disponible salía como "▼ 7.8 pts" —que no son puntos, son minutos—
+ * y la del contracargo como "▼ 19585.0", que no son ni pesos ni nada.
+ * "Puntos" es el default porque la mayoría de los indicadores son tasas.
  */
 export function Variacion({
   delta,
   mejorSiBaja = false,
-  unidad = "pts",
+  escribir = (n) => `${n.toFixed(1)} pts`,
   contra,
 }: {
   delta: number | null;
   mejorSiBaja?: boolean;
-  unidad?: string;
+  escribir?: (n: number) => string;
   contra: string;
 }) {
   if (delta === null) return null;
@@ -146,20 +151,8 @@ export function Variacion({
   const bien = mejorSiBaja ? delta < 0 : delta > 0;
   return (
     <span style={{ color: bien ? "#15803d" : "#b91c1c" }}>
-      {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} {unidad} vs {contra}
+      {delta > 0 ? "▲" : "▼"} {escribir(Math.abs(delta))} vs {contra}
     </span>
   );
 }
 
-const PESOS = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-
-export function pesos(valor: number | null | undefined) {
-  if (valor === null || valor === undefined) return "—";
-  return `$ ${PESOS.format(valor)}`;
-}
-
-/** Porcentaje sin semáforo: delivery todavía no tiene umbrales del cliente. */
-export function Pct({ valor }: { valor: number | null | undefined }) {
-  if (valor === null || valor === undefined) return <SinDato>—</SinDato>;
-  return <span className="tabular-nums">{valor.toFixed(1)}%</span>;
-}

@@ -1,17 +1,17 @@
 // Ensayo en seco del sync completo, contra las planillas REALES.
 //
 // Corre exactamente el mismo `ejecutarSync` que la ruta `/api/sync`, pero con
-// un Supabase falso: los locales salen del seed y los upserts se cuentan en
-// memoria en vez de escribirse. Sirve para verificar la parte que más se puede
-// romper —el matcheo de cada texto de planilla con un local— sin necesitar la
-// service_role key ni tocar la base.
+// un Supabase falso: las tablas de referencia se leen de la base y los upserts
+// se cuentan en memoria en vez de escribirse. Sirve para verificar la parte que
+// más se puede romper —el matcheo de cada texto de planilla con un local o un
+// punto de venta— sin escribir una sola fila.
 //
 //   npx tsx scripts/ensayo-sync.ts
 //
 // Cuando la key esté cargada, la prueba de verdad es la ruta:
 //   curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3100/api/sync
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { ejecutarSync } from "../src/lib/sync/ejecutar.ts";
 import { FUENTES } from "../src/lib/sync/fuentes.ts";
 
@@ -55,13 +55,36 @@ const LOCALES = [
 
 const escrituras: Record<string, Record<string, unknown>[]> = {};
 
+// Las tablas de referencia se LEEN de la base real; las escrituras siguen
+// siendo de mentira.
+//
+// Delivery cambió las reglas del ensayo. Un local se identifica con cinco
+// datos y una copia del seed acá adentro alcanzaba; los puntos de venta son 46
+// con 47 etiquetas de planilla, y los indicadores 36 con su unidad y su
+// encabezado. Copiar todo eso a mano garantiza que un día quede viejo y el
+// ensayo mienta —que es justo lo que pasó cuando el script leía la clave de
+// Google de un JSON suelto—. Leyéndolo de la base, el ensayo verifica el seed
+// que de verdad está aplicado.
+//
+// Sigue sin escribir una sola fila: `upsert` cuenta en memoria.
+const real = process.env.SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  : null;
+
+const REFERENCIA = ["locations", "delivery_point_labels", "delivery_metric_defs"];
+
 const falso = {
   from(tabla: string) {
     return {
-      select: async () =>
-        tabla === "locations"
+      select: async (columnas?: string) => {
+        if (!REFERENCIA.includes(tabla)) return { data: [], error: null };
+        if (real) return await real.from(tabla).select(columnas ?? "*");
+        // Sin la clave de servidor el ensayo igual corre, con el seed copiado
+        // de los locales. Delivery va a descartar todo y lo dice.
+        return tabla === "locations"
           ? { data: LOCALES, error: null }
-          : { data: [], error: null },
+          : { data: [], error: null };
+      },
       upsert: async (filas: Record<string, unknown>[]) => {
         (escrituras[tabla] ??= []).push(...filas);
         return { error: null };

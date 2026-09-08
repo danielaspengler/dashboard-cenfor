@@ -8,8 +8,8 @@
 > `../../memory.md` y `../HANDOFF.md`.
 
 **Última actualización:** 2026-09-08
-**Feature activa:** ninguna. C9 (Delivery — Rappi) quedó cerrada.
-**Próxima:** C10 — PedidosYa y Uber, o C11 — identidad visual, según qué llegue antes del cliente.
+**Feature activa:** ninguna. C9 y C10 (Delivery, los tres canales) quedaron cerradas.
+**Próxima:** C11 — identidad visual de CENFOR, cuando llegue el material del cliente.
 **En producción:** https://dashboard-cenfor.vercel.app
 
 ---
@@ -21,34 +21,59 @@
 | Reseñas de Google | funcionando, con datos reales |
 | Mystery Shopper | funcionando · ahora también lista las visitas de delivery del formulario |
 | Auditorías presenciales | funcionando (el dashboard es el archivo histórico que la planilla no tiene) |
-| Delivery | **terminado para Rappi** · PedidosYa y Uber pendientes (C10) |
+| Delivery | **terminado**: Rappi, PedidosYa y Uber |
 | Plan de acción | lugar reservado en el menú, sin definir con el cliente |
 
-Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 6 auditorías · 43 filas de
-indicadores de Rappi (julio y agosto 2026) · 225 filas de motivos · 21 puntos de venta activos.
+Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 6 auditorías · 884 valores de
+indicadores de delivery (julio y agosto 2026, tres canales) · 225 filas de motivos · 46 puntos
+de venta sobre 10 locales.
 
 ---
 
-## C9 cerrada: la pantalla de Delivery
+## Delivery, cerrado para los tres canales
 
-La sección Delivery muestra **los indicadores que publica Rappi**, nada más. Las visitas de
-delivery del mystery shopper se listan en «MS y Auditorías», junto a las de take away y
-promediadas aparte: son otra fuente y otra cosa.
+La sección Delivery muestra **lo que publican las apps**: Rappi, PedidosYa y Uber, un canal
+por vez. Las visitas de delivery del mystery shopper se listan en «MS y Auditorías», junto a
+las de take away y promediadas aparte: son otra fuente y otra cosa.
 
-Cinco decisiones que conviene no revertir sin motivo:
+| Canal | Puntos de venta | Indicadores | Valores cargados |
+|---|---|---|---|
+| Rappi | 22 (1 cerrado) | 13 + motivos de reclamo | 517 |
+| PedidosYa | 16 | 9 | 239 |
+| Uber | 8 (3 sin ventas todavía) | 14 | 128 |
 
+Julio y agosto de 2026 en los tres. Woops solo existe en PedidosYa: no vende por Rappi.
+
+**Los indicadores son datos, no columnas.** Cada canal declara qué mide en
+`delivery_metric_defs` —clave, nombre, unidad, si subir es bueno, si va en las tarjetas y el
+encabezado exacto de su planilla— y los valores van a `delivery_metric_values`. De ahí salen
+tres cosas: un solo parser lee las tres planillas, la pantalla dibuja los indicadores del
+canal sin tener una lista en el código, y **sumar un indicador es una fila en una tabla**.
+
+Decisiones que conviene no revertir sin motivo:
+
+- **No hay vista de los tres canales juntos.** Solo la disponibilidad y la calificación
+  existen en los tres, y ni siquiera igual: Rappi mide "Disponibilidad %", Uber "Tiempo en
+  línea" y PedidosYa "Hora no disponible", que es el concepto invertido y en horas. Un
+  promedio de las tres sería un número que no existe en ninguna app.
+- **Cada canal declara en la pantalla cómo está hecha su cuenta.** La calificación de Rappi se
+  pondera por reseñas y la de PedidosYa por evaluaciones; la de Uber va en promedio simple,
+  porque Uber publica el Score pero no cuántas evaluaciones lo forman. Uber es el único que
+  publica el volumen de pedidos, así que es el único cuyos porcentajes podrían ponderarse.
+- **Los valores se normalizan al guardar, no al mostrar.** Un porcentaje siempre en 0–100, una
+  duración siempre en minutos. La unidad la declara el catálogo, y se resolvió leyendo los
+  valores FORMATEADOS de cada planilla: sin formato, `0:01:28` de Uber y `44,9%` de PedidosYa
+  son la misma fracción, y las dos columnas se llaman "Tiempo de espera evitable".
 - **Selector de mes propio, no el filtro de período del tablero.** El dato de las apps es un
   cierre mensual. Con «30 días» julio desaparecería entero y agosto quedaría a medias sin que
-  se note. Vive igual en la URL (`?mes=2026-07`), así que la pantalla sigue siendo componente
-  de servidor.
-- **De cada mes se usa la carga con el cierre más reciente, nunca la suma.** Agosto viene
-  cargado dos veces —al 24 y al 31— y la segunda incluye a la primera (verificado: 27 órdenes
-  al 24, 49 al 31). Sumarlas contaría el mes casi dos veces. Está en `delMes()`, en `data.ts`.
-- **La calificación va ponderada por cantidad de reseñas; los porcentajes, en promedio simple,
-  y la pantalla lo dice.** La planilla de Rappi no trae el total de órdenes de cada punto, así
-  que no hay con qué ponderarlos. Derivarlo dividiendo las órdenes con reclamo por su
-  porcentaje da cualquier cosa cuando el porcentaje es cero: antes de inventar un denominador,
-  se declara cómo está hecha la cuenta.
+  se note. Vive igual en la URL (`?canal=uber&mes=2026-07`), así que la pantalla sigue siendo
+  componente de servidor.
+- **De cada mes se usa la carga con el cierre más reciente, nunca la suma.** Agosto de Rappi
+  viene cargado dos veces —al 24 y al 31— y la segunda incluye a la primera (27 órdenes al 24,
+  49 al 31). Está en `delMes()`, en `delivery.ts`.
+- **Una fila sin período se saltea en silencio.** PedidosYa trae 176 filas de plantilla para
+  los meses que todavía no llegaron. Contarlas como descarte llenaría de ruido el único aviso
+  que importa: una tienda renombrada.
 - **Ningún número está pintado de verde o rojo.** Los umbrales de mystery shopper y auditorías
   vienen de la planilla del cliente; los de delivery CENFOR no los definió. Un semáforo
   inventado se lee como criterio del cliente.
@@ -57,11 +82,14 @@ Cinco decisiones que conviene no revertir sin motivo:
   una tienda que ya no existe. `getPuntosDeVenta()` los trae igual —activos e inactivos—
   porque filtrarlos en la consulta dejaba las filas de indicadores sin nombre en la pantalla.
 
-**Verificado el 08/09/2026** con el build de producción y datos reales: agosto da 4,12★ sobre
-175 reseñas · 4,8% de reclamos (49 órdenes) · 0,4% de cancelaciones · 30,5% de demora · 87,5%
-de disponibilidad · $226.330 compensados, con las variaciones contra julio. Julio abre sin
-comparación, como corresponde. Los dos meses renderizan las 20 y 21 filas de puntos de venta y
-los motivos agrupados.
+**Verificado el 08/09/2026** con el build de producción y datos reales: los tres canales en
+los dos meses; 489 filas leídas, 884 valores + 225 motivos, **cero descartadas**; dos corridas
+seguidas del sync dejan los mismos conteos; `/api/sync` sin autorización sigue dando 401.
+
+La migración de Rappi al modelo nuevo se comparó **antes** de borrar la tabla vieja: los siete
+agregados de agosto —reclamos 4,8150 · cancelaciones 0,3905 · demora 32,0055 · disponibilidad
+91,9240 · calificación 4,1200 · 175 reseñas · $226.330— dieron idénticos hasta el cuarto
+decimal calculados con las columnas y con el catálogo.
 
 ---
 
@@ -73,6 +101,11 @@ los motivos agrupados.
 ## Pendientes
 
 **Esperando definición de Daniela / el cliente:**
+- **¿Woops Nueva Córdoba operó en agosto?** En PedidosYa trae 100% de cancelación evitable con
+  score «-», 0 evaluaciones y 0% de pedidos listos. Ella sola lleva el promedio de las 16
+  tiendas de 0% a 6,3%. El número es el que publica la app y se muestra tal cual.
+- **«Tiempo de espera evitable» no significa lo mismo en Uber que en PedidosYa** —una duración
+  contra un porcentaje— aunque la columna se llame igual en las dos planillas.
 - **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
   es aceptable. Sin eso la pantalla muestra los números sin semáforo.
 - placeId de Censurado Luuma · umbral de las auditorías · qué mails van en `emails_autorizados`.

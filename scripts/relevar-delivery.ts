@@ -1,23 +1,19 @@
-// Relevamiento de la planilla de delivery de Rappi. No escribe nada:
+// Relevamiento de una planilla de delivery. No escribe nada:
 // lista las pestañas y vuelca las primeras filas de cada una para poder
 // leer su estructura antes de escribir el parser.
 //
-//   npx tsx scripts/relevar-delivery.ts
+//   npx tsx scripts/relevar-delivery.ts <id> [filas]   (sin id: la de Rappi)
 
-import { readFileSync } from "node:fs";
 import { fetchSheetValues, fetchSheetTitles } from "../src/lib/google/sheets.ts";
 
-const CLAVE = JSON.parse(
-  readFileSync(
-    "C:/Users/Daniela Spengler/Desktop/Claude/HOLT/CENFOR/_credenciales/cenfor-service-account.json",
-    "utf8",
-  ),
-);
-process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL = CLAVE.client_email;
-process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY = CLAVE.private_key;
+// Las credenciales salen de .env.local, la MISMA fuente que usa la app. Antes
+// esto leia un JSON por ruta absoluta: al rotar la clave de Google el archivo
+// dejo de existir y el script murio, mientras la app andaba perfecto.
+process.loadEnvFile(".env.local");
 
-const ID = "1axROvefosXxlhCiCqK9iTj4ulPaOvM-gMxYw2jirzjU";
-const FILAS = Number(process.argv[2] ?? 8);
+// npx tsx scripts/relevar-delivery.ts <id-de-planilla> [filas]
+const ID = process.argv[2] || "1axROvefosXxlhCiCqK9iTj4ulPaOvM-gMxYw2jirzjU";
+const FILAS = Number(process.argv[3] ?? 8);
 
 const LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const letra = (i: number) =>

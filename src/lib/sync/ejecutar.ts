@@ -4,7 +4,7 @@ import { aTimestampISO } from "@/lib/parsers/comunes";
 import { parseResenas, parseSnapshot } from "@/lib/parsers/resenas";
 import { parseMysteryShopper } from "@/lib/parsers/mystery";
 import { esPestañaDeAuditoria, parseAuditorias, rangosDe } from "@/lib/parsers/auditorias";
-import { parseDeliveryIssues, parseDeliveryMetrics } from "@/lib/parsers/delivery";
+import { parseDeliveryIssues, parseIndicadores } from "@/lib/parsers/delivery";
 import { CANALES_DELIVERY, HOJAS, PLANILLAS, type Fuente } from "./fuentes";
 import {
   cargarDirectorio,
@@ -226,50 +226,60 @@ async function syncDelivery(
   supabase: SupabaseClient,
   dir: Directorio,
 ): Promise<ReporteFuente> {
-  // Un canal por planilla. Hoy solo Rappi; PedidosYa y Uber entran sumando
-  // su entrada a CANALES_DELIVERY, sin tocar esta función.
+  // Un canal por planilla, los tres por el mismo camino. Qué indicador tiene
+  // cada uno sale del catálogo de la base, no de acá: sumar un indicador es
+  // una fila en `delivery_metric_defs`.
   let leidas = 0;
   const descartadas: Descarte[] = [];
-  const metricas: Record<string, unknown>[] = [];
+  const valoresAGuardar: Record<string, unknown>[] = [];
   const motivos: Record<string, unknown>[] = [];
 
-  for (const { canal, planilla, hojas } of CANALES_DELIVERY) {
+  const { data: catalogo, error: errCatalogo } = await supabase
+    .from("delivery_metric_defs")
+    .select("id, channel, clave, unidad, sheet_header");
+  if (errCatalogo) {
+    throw new Error(`No se pudo leer el catálogo de indicadores: ${errCatalogo.message}`);
+  }
+
+  for (const { canal, planilla, hojas, columnas } of CANALES_DELIVERY) {
     const punto = (etiqueta: string) => puntoDelivery(dir, canal, etiqueta);
+    const defs = (catalogo ?? []).filter((d) => d.channel === canal);
+    if (!defs.length) {
+      descartadas.push({
+        motivo: `el canal ${canal} no tiene indicadores sembrados`,
+        detalle: "sin catálogo no hay nada que leer de su planilla",
+      });
+      continue;
+    }
 
     const valores = await fetchSheetValues(planilla, hojas.metricas);
     leidas += Math.max(0, valores.length - 1);
-    const met = parseDeliveryMetrics(valores);
+    const met = parseIndicadores(valores, defs, columnas);
     descartadas.push(...met.descartadas);
 
-    for (const m of met.filas) {
-      const delivery_point_id = punto(m.sheetLabel);
+    for (const v of met.filas) {
+      const delivery_point_id = punto(v.sheetLabel);
       if (!delivery_point_id) {
         descartadas.push({
           motivo: `punto de venta sin equivalencia en ${canal}`,
-          detalle: m.sheetLabel,
+          detalle: v.sheetLabel,
         });
         continue;
       }
-      metricas.push({
+      valoresAGuardar.push({
         delivery_point_id,
-        period_start: m.periodStart,
-        period_end: m.periodEnd,
-        cancelaciones_pct: m.cancelacionesPct,
-        ordenes_canceladas: m.ordenesCanceladas,
-        reclamos_pct: m.reclamosPct,
-        ordenes_con_reclamos: m.ordenesConReclamos,
-        ordenes_mal_estado: m.ordenesMalEstado,
-        ordenes_producto_diferente: m.ordenesProductoDiferente,
-        ordenes_producto_faltante: m.ordenesProductoFaltante,
-        disponibilidad_pct: m.disponibilidadPct,
-        ordenes_con_demora_pct: m.ordenesConDemoraPct,
-        compensacion_pagada: m.compensacionPagada,
-        reclamos_con_compensacion: m.reclamosConCompensacion,
-        calificacion_promedio: m.calificacionPromedio,
-        cantidad_resenas: m.cantidadResenas,
-        source_file_id: m.sourceFileId,
+        metric_def_id: v.metricDefId,
+        period_start: v.periodStart,
+        period_end: v.periodEnd,
+        valor: v.valor,
+        texto: v.texto,
+        source_file_id: v.sourceFileId,
       });
     }
+
+    // Los motivos de reclamo son solo de Rappi: las otras dos apps no los
+    // publican, así que sus entradas no traen esas hojas.
+    if (!("motivosOrdenes" in hojas)) continue;
 
     for (const [hoja, scope] of [
       [hojas.motivosOrdenes, "orden"],
@@ -306,9 +316,9 @@ async function syncDelivery(
 
   await guardar(
     supabase,
-    "delivery_metrics",
-    metricas,
-    "delivery_point_id,period_start,period_end",
+    "delivery_metric_values",
+    valoresAGuardar,
+    "delivery_point_id,metric_def_id,period_start,period_end",
   );
   // El período completo entra en la clave: la planilla trae dos cargas de
   // agosto —cerrada al 24 y al 31— y sin el fin la segunda pisaría a la
@@ -324,7 +334,7 @@ async function syncDelivery(
     fuente: "delivery",
     ok: true,
     leidas,
-    guardadas: metricas.length + motivos.length,
+    guardadas: valoresAGuardar.length + motivos.length,
     descartadas,
   };
 }

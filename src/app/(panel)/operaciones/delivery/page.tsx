@@ -1,31 +1,26 @@
 import {
+  agregar,
+  armarFilas,
   delMes,
-  getMetricasDelivery,
+  formatear,
+  getIndicadores,
   getMotivosDelivery,
   getPuntosDeVenta,
+  getValoresDelivery,
   mesesConDatos,
-  resumirDelivery,
-  type MetricaDelivery,
+  valorDe,
+  type FilaPunto,
+  type IndicadorDef,
   type MotivoDelivery,
-} from "@/lib/data";
+} from "@/lib/delivery";
+import { CANALES } from "@/lib/sync/fuentes";
 import { type Busqueda, etiquetaMes, leerMes, mesAnterior } from "@/lib/filtros";
-import { FiltroMes } from "@/components/filtros";
-import {
-  Card,
-  Dato,
-  PageHeader,
-  Pct,
-  SinDato,
-  Tabla,
-  Td,
-  Th,
-  Variacion,
-  pesos,
-} from "@/components/ui";
+import { FiltroCanal, FiltroMes } from "@/components/filtros";
+import { Card, Dato, PageHeader, SinDato, Tabla, Td, Th, Variacion } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-/** Motivos del mes agrupados por motivo + detalle, del que más órdenes afecta al que menos. */
+/** Motivos agrupados por motivo + detalle, del que más órdenes afecta al que menos. */
 function agrupar(motivos: MotivoDelivery[]) {
   const mapa = new Map<
     string,
@@ -46,8 +41,37 @@ function agrupar(motivos: MotivoDelivery[]) {
   return [...mapa.values()].sort((a, b) => b.ordenes - a.ordenes);
 }
 
-function delta(actual: number | null, previo: number | null): number | null {
-  return actual === null || previo === null ? null : actual - previo;
+function leerCanal(valor: string | string[] | undefined): string {
+  const v = Array.isArray(valor) ? valor[0] : valor;
+  return CANALES.some((c) => c.id === v) ? (v as string) : CANALES[0].id;
+}
+
+/**
+ * Cómo está hecha la cuenta de este canal, dicho en la pantalla.
+ *
+ * Las tres apps permiten cuentas distintas y esconderlo haría comparables
+ * números que no lo son. Sale del catálogo: si mañana una app empieza a
+ * publicar la cantidad de evaluaciones, la nota cambia sola.
+ */
+function notaDeLaCuenta(defs: IndicadorDef[]): string {
+  const ponderados = defs.filter((d) => d.pondera_con && d.destacado);
+  const promediados = defs.filter(
+    (d) => !d.pondera_con && d.destacado && (d.unidad === "pct" || d.unidad === "minutos"),
+  );
+  const partes: string[] = [];
+  if (ponderados.length) {
+    const nombres = ponderados.map((d) => d.nombre.toLowerCase()).join(" y ");
+    partes.push(`La ${nombres} va ponderada por la cantidad de evaluaciones.`);
+  }
+  if (promediados.length) {
+    partes.push(
+      `Los porcentajes y tiempos son promedio simple de los puntos de venta: esta app no publica el total de pedidos de cada uno, así que no hay con qué ponderarlos.`,
+    );
+  }
+  partes.push(
+    "CENFOR todavía no definió umbrales para delivery, por eso ningún número está pintado de verde o rojo.",
+  );
+  return partes.join(" ");
 }
 
 export default async function DeliveryPage({
@@ -56,59 +80,79 @@ export default async function DeliveryPage({
   searchParams: Promise<Busqueda>;
 }) {
   const filtros = await searchParams;
-  const [puntos, todasLasMetricas, todosLosMotivos] = await Promise.all([
+  const [defsTodos, puntosTodos, valoresTodos, motivosTodos] = await Promise.all([
+    getIndicadores(),
     getPuntosDeVenta(),
-    getMetricasDelivery(),
+    getValoresDelivery(),
     getMotivosDelivery(),
   ]);
 
-  const meses = mesesConDatos(todasLasMetricas);
+  const canal = leerCanal(filtros.canal);
+  const nombreCanal = CANALES.find((c) => c.id === canal)?.nombre ?? canal;
+  const defs = defsTodos.filter((d) => d.channel === canal).sort((a, b) => a.orden - b.orden);
+  const destacados = defs.filter((d) => d.destacado);
+  const puntos = puntosTodos.filter((p) => p.channel === canal);
+  const idsDelCanal = new Set(puntos.map((p) => p.id));
+
+  const valores = valoresTodos.filter((v) => idsDelCanal.has(v.delivery_point_id));
+  const meses = mesesConDatos(valores);
   const mes = leerMes(filtros.mes, meses);
   const previo = mesAnterior(mes, meses);
-
-  const puntoPorId = new Map(puntos.map((p) => [p.id, p]));
-  const activos = puntos.filter((p) => p.activo);
+  const etiquetaPrevio = previo ? etiquetaMes(previo).split(" ")[0].toLowerCase() : "";
 
   // Un punto de venta cerrado —Alta Córdoba dejó de operar— tiene histórico
   // válido del período en que operó, pero no entra en los promedios del mes:
   // aparece con 0% de disponibilidad y hunde el número del grupo con una
   // tienda que ya no existe. Se saca de la cuenta y se dice cuál se sacó.
-  const enActivo = (m: { delivery_point_id: string }) =>
-    puntoPorId.get(m.delivery_point_id)?.activo ?? false;
-
-  const delMesTodas = delMes(todasLasMetricas, mes);
-  const metricas = delMesTodas.filter(enActivo);
-  const cerrados = delMesTodas.filter((m) => !enActivo(m));
-  const motivos = delMes(todosLosMotivos, mes).filter(enActivo);
-  const resumen = resumirDelivery(metricas);
-  const resumenPrevio = previo
-    ? resumirDelivery(delMes(todasLasMetricas, previo).filter(enActivo))
-    : null;
-  const etiquetaPrevio = previo ? etiquetaMes(previo).split(" ")[0].toLowerCase() : "";
-  // Ordenado por reclamos: la pantalla existe para encontrar dónde duele, no
-  // para listar los puntos de venta alfabéticamente.
-  const filas = [...metricas].sort((a, b) => {
-    const ra = a.reclamos_pct ?? -1;
-    const rb = b.reclamos_pct ?? -1;
-    if (rb !== ra) return rb - ra;
-    return (puntoPorId.get(a.delivery_point_id)?.name ?? "").localeCompare(
-      puntoPorId.get(b.delivery_point_id)?.name ?? "",
-    );
+  const activos = puntos.filter((p) => p.activo);
+  const partir = (fs: FilaPunto[]) => ({
+    vivos: fs.filter((f) => f.punto.activo),
+    cerrados: fs.filter((f) => !f.punto.activo),
   });
 
-  const cierre = metricas[0]?.period_end;
-  const motivosPorOrden = agrupar(motivos.filter((m) => m.scope === "orden"));
-  const motivosPorProducto = agrupar(motivos.filter((m) => m.scope === "producto"));
+  const { vivos: filas, cerrados } = partir(armarFilas(delMes(valores, mes), defs, puntos));
+  const filasPrevias = previo
+    ? partir(armarFilas(delMes(valores, previo), defs, puntos)).vivos
+    : [];
+
+  // Ordenadas por el primer indicador del canal, de mayor a menor. En Rappi y
+  // PedidosYa el primero es el porcentaje de reclamos, así que arriba queda lo
+  // que más duele; en Uber es el volumen de pedidos, y arriba queda la tienda
+  // más grande. En los dos casos es la fila que primero hay que mirar.
+  const principal = defs[0];
+  const ordenadas = [...filas].sort((a, b) => {
+    const va = principal ? (valorDe(a, principal.clave) ?? -1) : -1;
+    const vb = principal ? (valorDe(b, principal.clave) ?? -1) : -1;
+    if (vb !== va) return vb - va;
+    return a.punto.name.localeCompare(b.punto.name);
+  });
+
+  const motivosDelMes = delMes(motivosTodos, mes).filter((m) =>
+    idsDelCanal.has(m.delivery_point_id),
+  );
+  const cierre = delMes(valores, mes)[0]?.period_end;
+
+  const encabezado = (
+    <PageHeader
+      titulo="Delivery"
+      bajada="Solo Censurado vende por app · la unidad es el punto de venta, no el local"
+      extra={
+        <div className="flex items-center gap-2">
+          <FiltroCanal actual={canal} canales={[...CANALES]} />
+          {meses.length > 1 && <FiltroMes actual={mes} meses={meses} />}
+        </div>
+      }
+    />
+  );
 
   if (!meses.length) {
     return (
       <>
-        <PageHeader titulo="Delivery" bajada="Rappi · solo Censurado opera delivery" />
+        {encabezado}
         <div className="p-7">
           <Card>
             <SinDato>
-              Todavía no hay datos de delivery cargados. Los trae el sync desde la planilla de
-              Rappi.
+              Todavía no hay datos de {nombreCanal} cargados. Los trae el sync desde su planilla.
             </SinDato>
           </Card>
         </div>
@@ -118,235 +162,181 @@ export default async function DeliveryPage({
 
   return (
     <>
-      <PageHeader
-        titulo="Delivery"
-        bajada="Rappi · solo Censurado opera delivery · la unidad es el punto de venta, no el local"
-        extra={<FiltroMes actual={mes} meses={meses} />}
-      />
+      {encabezado}
 
       <div className="space-y-8 p-7">
         <p className="text-xs text-[var(--color-piedra)]">
-          <strong className="font-medium text-[var(--color-tinta)]">{etiquetaMes(mes)}</strong> ·{" "}
-          {resumen.puntos} de {activos.length} puntos de venta con datos
-          {cierre && ` · cierre de la planilla al ${cierre.slice(8, 10)}/${cierre.slice(5, 7)}`} ·
-          PedidosYa y Uber todavía no están conectados.
+          <strong className="font-medium text-[var(--color-tinta)]">
+            {nombreCanal} · {etiquetaMes(mes)}
+          </strong>{" "}
+          · {filas.length} de {activos.length} puntos de venta con datos
+          {cierre && ` · cierre de la planilla al ${cierre.slice(8, 10)}/${cierre.slice(5, 7)}`}
           {cerrados.length > 0 && (
             <>
-              {" "}
-              Fuera de estos números:{" "}
-              {cerrados
-                .map((m) => puntoPorId.get(m.delivery_point_id)?.name ?? "sin identificar")
-                .join(" · ")}
-              , que ya no {cerrados.length === 1 ? "opera" : "operan"}.
+              {" · fuera de estos números: "}
+              {cerrados.map((f) => f.punto.name).join(" · ")}, que ya no{" "}
+              {cerrados.length === 1 ? "opera" : "operan"}
             </>
           )}
+          .
         </p>
 
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-5">
-          <Card>
-            <Dato
-              etiqueta="Calificación"
-              valor={
-                resumen.calificacion !== null ? (
-                  `${resumen.calificacion.toFixed(2)} ★`
-                ) : (
-                  <SinDato>—</SinDato>
-                )
-              }
-              detalle={
-                resumen.resenas
-                  ? `ponderada sobre ${resumen.resenas} reseñas`
-                  : "sin reseñas en el mes"
-              }
-            />
-          </Card>
-          <Card>
-            <Dato
-              etiqueta="Reclamos"
-              valor={<Pct valor={resumen.reclamos} />}
-              detalle={`${resumen.ordenesConReclamos} órdenes con reclamo`}
-            />
-            <div className="mt-1 text-xs">
-              <Variacion
-                delta={delta(resumen.reclamos, resumenPrevio?.reclamos ?? null)}
-                mejorSiBaja
-                contra={etiquetaPrevio}
-              />
-            </div>
-          </Card>
-          <Card>
-            <Dato
-              etiqueta="Cancelaciones"
-              valor={<Pct valor={resumen.cancelaciones} />}
-              detalle={`${resumen.ordenesCanceladas} órdenes canceladas`}
-            />
-            <div className="mt-1 text-xs">
-              <Variacion
-                delta={delta(resumen.cancelaciones, resumenPrevio?.cancelaciones ?? null)}
-                mejorSiBaja
-                contra={etiquetaPrevio}
-              />
-            </div>
-          </Card>
-          <Card>
-            <Dato etiqueta="Órdenes con demora" valor={<Pct valor={resumen.demora} />} />
-            <div className="mt-1 text-xs">
-              <Variacion
-                delta={delta(resumen.demora, resumenPrevio?.demora ?? null)}
-                mejorSiBaja
-                contra={etiquetaPrevio}
-              />
-            </div>
-          </Card>
-          <Card>
-            <Dato
-              etiqueta="Disponibilidad"
-              valor={<Pct valor={resumen.disponibilidad} />}
-              detalle={`compensado: ${pesos(resumen.compensacion)}`}
-            />
-            <div className="mt-1 text-xs">
-              <Variacion
-                delta={delta(resumen.disponibilidad, resumenPrevio?.disponibilidad ?? null)}
-                contra={etiquetaPrevio}
-              />
-            </div>
-          </Card>
+          {destacados.map((def) => {
+            const actual = agregar(filas, def);
+            const anterior = filasPrevias.length ? agregar(filasPrevias, def) : null;
+            const esSuma = def.unidad === "conteo" || def.unidad === "pesos";
+            return (
+              <Card key={def.id}>
+                <Dato
+                  etiqueta={def.nombre}
+                  valor={formatear(actual, def.unidad) ?? <SinDato>—</SinDato>}
+                  detalle={esSuma ? "total del mes" : `promedio de ${filas.length} puntos`}
+                />
+                <div className="mt-1 text-xs">
+                  <Variacion
+                    delta={actual !== null && anterior !== null ? actual - anterior : null}
+                    mejorSiBaja={def.mejor_si_baja}
+                    // Un porcentaje varía en puntos porcentuales; lo demás
+                    // varía en su propia unidad.
+                    escribir={
+                      def.unidad === "pct"
+                        ? undefined
+                        : (n) => formatear(n, def.unidad) ?? String(n)
+                    }
+                    contra={etiquetaPrevio}
+                  />
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
-        <p className="text-xs text-[var(--color-piedra)]">
-          La calificación va ponderada por cantidad de reseñas. Los porcentajes son promedio
-          simple de los puntos de venta: la planilla de Rappi no trae el total de órdenes de cada
-          uno, así que no hay con qué ponderarlos. CENFOR todavía no definió umbrales para
-          delivery, por eso ningún número está pintado de verde o rojo.
-        </p>
+        <p className="text-xs text-[var(--color-piedra)]">{notaDeLaCuenta(defs)}</p>
 
         <section>
           <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
             Puntos de venta
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
-            Ordenados por porcentaje de reclamos. Las marcas B —Lomos la Catedral, Burger Club,
-            Woops— cocinan dentro de un local de Censurado y se venden aparte en la app. Turbo es
-            la tienda rápida de Rappi: es un punto de venta propio y no se suma al del local.
+            Cada app mide su propia tienda: un mismo local aparece en los tres canales con
+            números que no se comparan entre sí. Las marcas B —Lomos la Catedral, Burger Club,
+            Woops— cocinan dentro de un local de Censurado y se venden aparte en las apps.
+            {canal === "rappi" &&
+              " Turbo es la tienda rápida de Rappi: es un punto de venta propio y no se suma al del local."}
           </p>
           <Tabla>
             <thead>
               <tr>
                 <Th>Punto de venta</Th>
                 <Th>Local</Th>
-                <Th className="text-right">Calificación</Th>
-                <Th className="text-right">Reclamos</Th>
-                <Th className="text-right">Cancelaciones</Th>
-                <Th className="text-right">Demora</Th>
-                <Th className="text-right">Disponibilidad</Th>
-                <Th className="text-right">Compensado</Th>
+                {defs.map((d) => (
+                  <Th key={d.id} className={d.unidad === "texto" ? "" : "text-right"}>
+                    {d.nombre}
+                  </Th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filas.map((m: MetricaDelivery) => {
-                const punto = puntoPorId.get(m.delivery_point_id);
-                return (
-                  <tr key={m.delivery_point_id} className="hover:bg-[var(--color-hueso)]">
-                    {/* El nombre del punto ya trae la marca B y el formato
-                        ("Lomos la Catedral · Urca · Turbo"): repetirlos en una
-                        etiqueta al lado sería decir dos veces lo mismo. */}
-                    <Td className="font-medium">{punto?.name ?? <SinDato>—</SinDato>}</Td>
-                    <Td className="text-[var(--color-piedra)]">{punto?.local}</Td>
-                    <Td className="text-right tabular-nums">
-                      {m.calificacion_promedio !== null ? (
-                        <>
-                          {m.calificacion_promedio.toFixed(2)} ★
-                          <span className="ml-1 text-xs text-[var(--color-piedra)]">
-                            ({m.cantidad_resenas})
-                          </span>
-                        </>
-                      ) : (
-                        <SinDato>sin reseñas</SinDato>
-                      )}
-                    </Td>
-                    <Td className="text-right">
-                      <Pct valor={m.reclamos_pct} />
-                      {!!m.ordenes_con_reclamos && (
-                        <span className="ml-1 text-xs text-[var(--color-piedra)]">
-                          ({m.ordenes_con_reclamos})
-                        </span>
-                      )}
-                    </Td>
-                    <Td className="text-right">
-                      <Pct valor={m.cancelaciones_pct} />
-                    </Td>
-                    <Td className="text-right">
-                      <Pct valor={m.ordenes_con_demora_pct} />
-                    </Td>
-                    <Td className="text-right">
-                      <Pct valor={m.disponibilidad_pct} />
-                    </Td>
-                    <Td className="text-right tabular-nums">{pesos(m.compensacion_pagada)}</Td>
-                  </tr>
-                );
-              })}
+              {ordenadas.map((f) => (
+                <tr key={f.punto.id} className="hover:bg-[var(--color-hueso)]">
+                  {/* El nombre del punto ya trae la marca B y el formato
+                      ("Lomos la Catedral · Urca"): repetirlos al lado sería
+                      decir dos veces lo mismo. */}
+                  <Td className="whitespace-nowrap font-medium">{f.punto.name}</Td>
+                  <Td className="whitespace-nowrap text-[var(--color-piedra)]">{f.punto.local}</Td>
+                  {defs.map((d) => {
+                    const celda = f.valores.get(d.clave);
+                    const texto =
+                      d.unidad === "texto"
+                        ? (celda?.texto ?? null)
+                        : formatear(celda?.valor ?? null, d.unidad);
+                    return (
+                      <Td
+                        key={d.id}
+                        className={
+                          d.unidad === "texto"
+                            ? "text-xs text-[var(--color-piedra)]"
+                            : "whitespace-nowrap text-right tabular-nums"
+                        }
+                      >
+                        {texto ?? <SinDato>—</SinDato>}
+                      </Td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </Tabla>
         </section>
 
-        <section>
-          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
-            Motivos de reclamo
-          </h2>
-          <p className="mb-3 text-xs text-[var(--color-piedra)]">
-            Cuando un mes tiene más de una carga en la planilla, se usa la más reciente, que
-            incluye a la anterior. Agosto viene cargado dos veces —cerrado al 24 y al 31—:
-            sumarlas contaría el mes casi dos veces.
-          </p>
-          <div className="grid gap-5 lg:grid-cols-2">
-            {[
-              { titulo: "Por orden", filas: motivosPorOrden },
-              { titulo: "Por producto", filas: motivosPorProducto },
-            ].map((bloque) => (
-              <div key={bloque.titulo}>
-                <h3 className="mb-2 text-xs font-medium text-[var(--color-piedra)]">
-                  {bloque.titulo}
-                </h3>
-                {bloque.filas.length === 0 ? (
-                  <Card>
-                    <SinDato>Sin reclamos cargados en {etiquetaMes(mes).toLowerCase()}.</SinDato>
-                  </Card>
-                ) : (
-                  <Tabla>
-                    <thead>
-                      <tr>
-                        <Th>Motivo</Th>
-                        <Th className="text-right">Órdenes</Th>
-                        <Th className="text-right">Puntos</Th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bloque.filas.slice(0, 8).map((f) => (
-                        <tr
-                          key={`${f.motivo}-${f.detalle}`}
-                          className="hover:bg-[var(--color-hueso)]"
-                        >
-                          <Td>
-                            <span className="font-medium">{f.motivo}</span>
-                            {f.detalle && (
-                              <span className="ml-2 text-xs text-[var(--color-piedra)]">
-                                {f.detalle}
-                              </span>
-                            )}
-                          </Td>
-                          <Td className="text-right tabular-nums">{f.ordenes}</Td>
-                          <Td className="text-right tabular-nums text-[var(--color-piedra)]">
-                            {f.puntos.size}
-                          </Td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Tabla>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Los motivos de reclamo son solo de Rappi. En los otros dos canales
+            la sección no aparece vacía: no aparece. */}
+        {motivosDelMes.length > 0 && (
+          <section>
+            <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+              Motivos de reclamo
+            </h2>
+            <p className="mb-3 text-xs text-[var(--color-piedra)]">
+              Cuando un mes tiene más de una carga en la planilla, se usa la más reciente, que
+              incluye a la anterior. Agosto viene cargado dos veces —cerrado al 24 y al 31—:
+              sumarlas contaría el mes casi dos veces.
+            </p>
+            <div className="grid gap-5 lg:grid-cols-2">
+              {[
+                { titulo: "Por orden", scope: "orden" as const },
+                { titulo: "Por producto", scope: "producto" as const },
+              ].map((bloque) => {
+                const delBloque = agrupar(motivosDelMes.filter((m) => m.scope === bloque.scope));
+                return (
+                  <div key={bloque.titulo}>
+                    <h3 className="mb-2 text-xs font-medium text-[var(--color-piedra)]">
+                      {bloque.titulo}
+                    </h3>
+                    {delBloque.length === 0 ? (
+                      <Card>
+                        <SinDato>
+                          Sin reclamos cargados en {etiquetaMes(mes).toLowerCase()}.
+                        </SinDato>
+                      </Card>
+                    ) : (
+                      <Tabla>
+                        <thead>
+                          <tr>
+                            <Th>Motivo</Th>
+                            <Th className="text-right">Órdenes</Th>
+                            <Th className="text-right">Puntos</Th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {delBloque.slice(0, 8).map((f) => (
+                            <tr
+                              key={`${f.motivo}-${f.detalle}`}
+                              className="hover:bg-[var(--color-hueso)]"
+                            >
+                              <Td>
+                                <span className="font-medium">{f.motivo}</span>
+                                {f.detalle && (
+                                  <span className="ml-2 text-xs text-[var(--color-piedra)]">
+                                    {f.detalle}
+                                  </span>
+                                )}
+                              </Td>
+                              <Td className="text-right tabular-nums">{f.ordenes}</Td>
+                              <Td className="text-right tabular-nums text-[var(--color-piedra)]">
+                                {f.puntos.size}
+                              </Td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Tabla>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );
