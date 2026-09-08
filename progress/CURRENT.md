@@ -32,11 +32,13 @@ Verificado con datos reales el 04/09: Censurado 4,42★ / 832 reseñas · MS 83,
 ## Lo que está a medio hacer: C9, Delivery de Rappi
 
 **Hecho y probado:** las migraciones del esquema (`sub_brands`, `delivery_points`,
-`delivery_metrics`, `delivery_issues`, con RLS), el seed de 3 marcas B + 21 puntos de venta, y
-el parser contra la planilla viva — 268 filas, cero descartadas. Todo eso quedó commiteado el
-08/09 (`a2f5c74`), con el typecheck pasando.
+`delivery_metrics`, `delivery_issues`, con RLS), el seed de 3 marcas B + 21 puntos de venta, el
+parser, **y la integración al sync**. Todo eso quedó commiteado el 08/09 (`a2f5c74`).
 
-**Falta:** integrarlo al sync (`ejecutar.ts` + la ruta) y hacer la pantalla.
+**Verificado en producción el 08/09/2026:** `/api/sync` responde 200 en 7 s con cinco fuentes,
+y `delivery` trae 268 leídas / 268 guardadas, cero descartadas.
+
+**Falta solo la pantalla.**
 
 Tres cosas para tener presentes al retomar:
 
