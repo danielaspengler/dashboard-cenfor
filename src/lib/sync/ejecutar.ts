@@ -207,6 +207,10 @@ async function syncAuditorias(
       auditor: a.auditor,
       franchisee: a.franchisee,
       score_pct: a.score_pct,
+      // La columna existía desde el esquema inicial y se guardaba vacía. El
+      // desglose por dimensión es lo que el informe por local necesita para
+      // decir DÓNDE se perdió el puntaje, no solo cuánto.
+      categories: a.categories,
       source_sheet: a.source_sheet,
       source_row_hash: a.source_row_hash,
     });

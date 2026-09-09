@@ -7,13 +7,38 @@
 export const MARCA = {
   nombre: "CENFOR",
   bajada: "Control operativo",
-  // Las dos marcas del grupo. El color distingue una de otra en gráficos y
-  // filtros; no pretende ser la identidad de cada marca.
+  // Las dos marcas del grupo. Amarillo y rojo, elegidos por Daniela el
+  // 09/09/2026. Los tonos son los oscuros de cada color y no los plenos:
+  // el punto se dibuja sobre blanco y un amarillo pleno no se ve.
+  //
+  // Formaggio va en VINO y no en rojo pleno: el rojo del semáforo
+  // ("Deficiente", NIVELES) vive en las mismas tablas y dos rojos parecidos se
+  // leen como la misma señal. El de la marca aparece solo como punto a la
+  // izquierda del local.
   marcas: {
-    censurado: { nombre: "Censurado", color: "#b45309" },
-    formaggio: { nombre: "Formaggio", color: "#1d4ed8" },
+    censurado: { nombre: "Censurado", color: "#eab308" },
+    formaggio: { nombre: "Formaggio", color: "#7f1d3a" },
   },
 } as const;
+
+// PESOS DEL SCORE DE CALIDAD
+//
+// Definición del cliente, en ../../TABLA_SCORE_MARCAS.md (09/09/2026). Van
+// acá y no en la base porque son la definición del indicador, no un dato: si
+// cambian, el número de todos los meses cambia y eso tiene que quedar en el
+// historial de git.
+//
+// **Cada marca tiene su modelo, y un peso en cero significa que el eje NO le
+// corresponde**, no que falte el dato. Formaggio no tiene auditoría presencial
+// ni vende por apps: esas dos secciones no aparecen en su informe, sin aviso.
+// Un eje que sí le corresponde pero este mes no se midió es otra cosa: ahí el
+// peso se redistribuye y el informe lo dice.
+export type EjeScore = "auditoria" | "mystery" | "puntuaciones" | "operativo";
+
+export const PESOS_SCORE: Record<string, Record<EjeScore, number>> = {
+  censurado: { auditoria: 30, mystery: 30, puntuaciones: 20, operativo: 20 },
+  formaggio: { auditoria: 0, mystery: 50, puntuaciones: 50, operativo: 0 },
+};
 
 // Semáforo de mystery shopper y auditorías.
 //
@@ -27,6 +52,27 @@ export const NIVELES = [
   { desde: 60, nombre: "Regular", color: "#d97706", clase: "text-amber-600" },
   { desde: 0, nombre: "Deficiente", color: "#b91c1c", clase: "text-red-700" },
 ] as const;
+
+// Semáforo de las AUDITORÍAS presenciales. Son otros cortes y son cinco, no
+// cuatro: la planilla los define en su bloque «LECTURA DE LOS RESULTADOS»,
+// encontrado el 09/09/2026 al relevar para el informe por local. Hasta
+// entonces las auditorías se pintaban con los cortes de mystery shopper,
+// que son del formulario y no de la auditoría.
+export const NIVELES_AUDITORIA = [
+  { desde: 95, nombre: "Se cumple totalmente", color: "#15803d" },
+  { desde: 90, nombre: "Se cumple mayoritariamente", color: "#65a30d" },
+  { desde: 70, nombre: "Se cumple en buena parte", color: "#ca8a04" },
+  { desde: 50, nombre: "Se cumple en partes", color: "#d97706" },
+  { desde: 0, nombre: "No se cumple", color: "#b91c1c" },
+] as const;
+
+export function nivelAuditoria(porcentaje: number | null | undefined) {
+  if (porcentaje === null || porcentaje === undefined) return null;
+  return (
+    NIVELES_AUDITORIA.find((n) => porcentaje >= n.desde) ??
+    NIVELES_AUDITORIA[NIVELES_AUDITORIA.length - 1]
+  );
+}
 
 export function nivelDe(porcentaje: number | null | undefined) {
   if (porcentaje === null || porcentaje === undefined) return null;
