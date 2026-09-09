@@ -167,20 +167,24 @@ verifica con `npx tsx scripts/probar-score.ts 2026-08`.
   Turbo—: se promedian entre sí antes de entrar, o Rappi pesaría el doble que Google.
 - **Puntuaciones = Google + Rappi + PedidosYa**, cada una ★/5×100. Uber queda afuera por
   definición del cliente. Los textos de las reseñas no entran en ningún cálculo.
-- **Operativo = 100 − cancelados − tiempo cerrado**, promediando los canales del local. El
-  tiempo cerrado de PedidosYa viene en minutos y se convierte sobre el mes calendario (24 h ×
-  días). Rappi y Uber publican disponibilidad, que es el concepto invertido.
+- **Operativo = 100 − rechazados − cancelados − tiempo cerrado − reclamos**, promediando los
+  canales del local. El tiempo cerrado de PedidosYa viene en minutos y se convierte sobre el
+  mes calendario (24 h × días); Rappi y Uber publican disponibilidad, que es el concepto
+  invertido. **Los reclamos son los que mueven este eje**: en agosto las cancelaciones dieron
+  0,14% en Rappi y 0,00% en PedidosYa, contra reclamos de 3,12% y 1,69%. **«Rechazados» no
+  tiene indicador**: ninguna de las tres apps lo publica —Rappi trae cancelaciones, PedidosYa
+  cancelación evitable, Uber pedidos no completados—, así que hoy suma cero. El rol quedó
+  declarado igual: el día que aparezca en una planilla entra marcando una fila del catálogo.
 - **Qué indicador de cada app es cuál lo dice el catálogo**, en la columna `rol` (migración
   `20260909120000`): las tres apps los nombran distinto y ninguna usa la palabra
   «rechazados» de la fórmula original. Cambiar de opinión es una fila en una tabla.
 
-**Verificado el 09/09/2026 contra el informe en papel de Carlos Paz:** el score da 87,41 y el
-PDF 87,10, y la diferencia es la auditoría, que se pisó (86,04 hoy contra 85,81 entonces). El
-eje Puntuaciones de Poeta Lugones da 92,67, **idéntico** al ejemplo de la tabla del cliente.
-Los 10 locales calculan en julio y agosto.
-
-**Pendiente de Daniela:** si los reclamos entran en el eje operativo. Hoy no entran, porque
-«rechazados» y «cancelados» resultaron ser lo mismo y la fórmula no puede restar dos veces.
+**La fórmula quedó reproducida al centésimo contra el informe en papel de Carlos Paz.** Con
+los reclamos adentro, el eje operativo da 84,58, que es exactamente el valor que hace cerrar
+el PDF en 87,10: 0,30×85,81 + 0,30×89,47 + 0,20×88,00 + 0,20×84,58 = 87,10. Con la auditoría
+de hoy (86,04, porque la planilla se pisó) da 87,17. Además, el eje Puntuaciones de Poeta
+Lugones da 92,67, **idéntico** al ejemplo de la tabla del cliente. Los 10 locales calculan en
+julio y agosto.
 
 ## Jerarquía visual (09/09/2026)
 

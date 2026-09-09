@@ -100,10 +100,19 @@ function pctDelMes(minutos: number, mes: string): number {
 /**
  * El eje operativo de UN punto de venta.
  *
- * `100 − cancelados − tiempo cerrado`, con los dos en porcentaje. Qué
- * indicador de cada app es cuál lo dice el catálogo (columna `rol`), no una
- * lista acá: las tres apps los nombran distinto y ninguna usa la palabra
- * "rechazados" de la definición.
+ * `100 − rechazados − cancelados − tiempo cerrado − reclamos`, todo en
+ * porcentaje. Qué indicador de cada app es cuál lo dice el catálogo (columna
+ * `rol`) y no una lista acá: las tres apps los nombran distinto.
+ *
+ * **Los reclamos son los que mueven este número.** En agosto las cancelaciones
+ * dieron 0,14% en Rappi y 0,00% en PedidosYa, contra reclamos de 3,12% y
+ * 1,69%: un eje que solo restara cancelaciones casi no distinguiría un local
+ * de otro.
+ *
+ * **`rechazados` todavía no tiene indicador en ninguna app.** Rappi publica
+ * cancelaciones, PedidosYa cancelación evitable y Uber pedidos no completados
+ * —un concepto por app—, así que hoy ese término suma cero. El día que la
+ * métrica aparezca en una planilla entra sola, marcando una fila del catálogo.
  *
  * Dos traducciones que hace esta función:
  *
@@ -112,13 +121,12 @@ function pctDelMes(minutos: number, mes: string): number {
  * - **Uber no publica un porcentaje de cancelados**, publica cuántos pedidos
  *   completó y cuántos no. El porcentaje sale de esos dos.
  *
- * Un punto que no trae ninguno de los dos componentes devuelve null: no hay
- * dato, y un eje sin dato no vale cero.
+ * Un punto que no trae ninguno de los componentes devuelve null: no hay dato,
+ * y un eje sin dato no vale cero.
  */
 function operativoDe(fila: FilaPunto, defs: IndicadorDef[], mes: string): number | null {
-  const porRol = (rol: string) => defs.find((d) => d.rol === rol && d.channel === fila.punto.channel);
   const leer = (rol: string) => {
-    const def = porRol(rol);
+    const def = defs.find((d) => d.rol === rol && d.channel === fila.punto.channel);
     return def ? valorDe(fila, def.clave) : null;
   };
 
@@ -138,10 +146,11 @@ function operativoDe(fila: FilaPunto, defs: IndicadorDef[], mes: string): number
     if (disponibilidad !== null) cerrado = 100 - disponibilidad;
   }
 
-  if (cancelados === null && cerrado === null) return null;
+  const descuentos = [leer("rechazados"), cancelados, cerrado, leer("reclamos")];
+  if (descuentos.every((d) => d === null)) return null;
   // Piso en cero: un local con 40% cancelado y 70% cerrado no tiene un score
   // negativo, tiene un cero.
-  return Math.max(0, 100 - (cancelados ?? 0) - (cerrado ?? 0));
+  return Math.max(0, 100 - descuentos.reduce((a: number, d) => a + (d ?? 0), 0));
 }
 
 export type DatosScore = {
