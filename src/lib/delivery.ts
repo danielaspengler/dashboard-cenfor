@@ -31,6 +31,12 @@ export type IndicadorDef = {
   destacado: boolean;
   orden: number;
   pondera_con: string | null;
+  /**
+   * Qué papel cumple en el score de calidad: calificacion, cancelados,
+   * disponibilidad, tiempo_cerrado, pedidos_completados,
+   * pedidos_no_completados. Null = se muestra pero no entra en ningún cálculo.
+   */
+  rol: string | null;
 };
 
 export type PuntoDeVenta = {
@@ -40,6 +46,7 @@ export type PuntoDeVenta = {
   formato: "normal" | "turbo";
   name: string;
   local: string;
+  localSlug: string;
   marcaB: string | null;
   activo: boolean;
 };
@@ -72,7 +79,9 @@ export async function getIndicadores(): Promise<IndicadorDef[]> {
   const supabase = await clienteDeLectura();
   const { data, error } = await supabase
     .from("delivery_metric_defs")
-    .select("id, channel, clave, nombre, unidad, mejor_si_baja, destacado, orden, pondera_con")
+    .select(
+      "id, channel, clave, nombre, unidad, mejor_si_baja, destacado, orden, pondera_con, rol",
+    )
     .order("orden");
   if (error) console.error("delivery_metric_defs:", error.message);
   return (data ?? []) as IndicadorDef[];
@@ -82,7 +91,9 @@ export async function getPuntosDeVenta(): Promise<PuntoDeVenta[]> {
   const supabase = await clienteDeLectura();
   const { data, error } = await supabase
     .from("delivery_points")
-    .select("id, location_id, channel, formato, name, activo, locations(name), sub_brands(name)")
+    .select(
+      "id, location_id, channel, formato, name, activo, locations(name, slug), sub_brands(name)",
+    )
     .order("name");
   // Una consulta que falla devuelve `data` en null y la pantalla se dibuja
   // vacía sin decir nada. Al menos que quede en el log del servidor.
@@ -100,6 +111,7 @@ export async function getPuntosDeVenta(): Promise<PuntoDeVenta[]> {
     name: p.name,
     activo: p.activo,
     local: (p.locations as unknown as { name: string } | null)?.name ?? "",
+    localSlug: (p.locations as unknown as { slug: string } | null)?.slug ?? "",
     marcaB: (p.sub_brands as unknown as { name: string } | null)?.name ?? null,
   })) as PuntoDeVenta[];
 }
@@ -173,6 +185,30 @@ export function armarFilas(
     filas.set(punto.id, fila);
   }
   return [...filas.values()];
+}
+
+/**
+ * Los locales de un canal, para el filtro de la pantalla.
+ *
+ * Solo los que tienen al menos un punto de venta ABIERTO: Alta Córdoba tiene
+ * julio y agosto cargados pero ya no opera, y ofrecerlo en el filtro sería
+ * ofrecer un local cuyos números la pantalla saca de todos los promedios.
+ *
+ * Se identifican por el slug del local y no por su nombre: en el tablero
+ * "Nueva Córdoba" existe en las dos marcas. Hoy delivery es solo Censurado,
+ * pero el día que Formaggio venda por app el filtro ya no se confunde.
+ */
+export function localesDelCanal(
+  puntos: PuntoDeVenta[],
+): { slug: string; nombre: string; puntos: number }[] {
+  const mapa = new Map<string, { slug: string; nombre: string; puntos: number }>();
+  for (const p of puntos) {
+    if (!p.activo || !p.localSlug) continue;
+    const fila = mapa.get(p.localSlug) ?? { slug: p.localSlug, nombre: p.local, puntos: 0 };
+    fila.puntos += 1;
+    mapa.set(p.localSlug, fila);
+  }
+  return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
 export function valorDe(fila: FilaPunto, clave: string): number | null {

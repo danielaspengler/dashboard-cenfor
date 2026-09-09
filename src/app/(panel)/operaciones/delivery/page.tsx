@@ -7,6 +7,7 @@ import {
   getMotivosDelivery,
   getPuntosDeVenta,
   getValoresDelivery,
+  localesDelCanal,
   mesesConDatos,
   valorDe,
   type FilaPunto,
@@ -14,8 +15,15 @@ import {
   type MotivoDelivery,
 } from "@/lib/delivery";
 import { CANALES } from "@/lib/sync/fuentes";
-import { type Busqueda, etiquetaMes, leerMes, mesAnterior } from "@/lib/filtros";
-import { FiltroCanal, FiltroMeses } from "@/components/filtros";
+import {
+  LOCAL_TODOS,
+  type Busqueda,
+  etiquetaMes,
+  leerLocal,
+  leerMes,
+  mesAnterior,
+} from "@/lib/filtros";
+import { FiltroCanal, FiltroLocal, FiltroMeses } from "@/components/filtros";
 import { Card, Dato, PageHeader, SinDato, Tabla, Td, Th, Variacion } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -91,9 +99,24 @@ export default async function DeliveryPage({
   const nombreCanal = CANALES.find((c) => c.id === canal)?.nombre ?? canal;
   const defs = defsTodos.filter((d) => d.channel === canal).sort((a, b) => a.orden - b.orden);
   const destacados = defs.filter((d) => d.destacado);
-  const puntos = puntosTodos.filter((p) => p.channel === canal);
+  const puntosDelCanal = puntosTodos.filter((p) => p.channel === canal);
+
+  // El filtro de local junta lo que la app separa: Urca son tres tiendas en
+  // Rappi —el local, su Turbo y la dark kitchen que cocina adentro— y cada una
+  // se mide aparte. Elegir un local recalcula la pantalla entera: las tarjetas
+  // pasan a ser el promedio de esa cocina, no del canal.
+  const locales = localesDelCanal(puntosDelCanal);
+  const local = leerLocal(
+    filtros.local,
+    locales.map((l) => l.slug),
+  );
+  const nombreLocal = locales.find((l) => l.slug === local)?.nombre ?? "";
+  const puntos =
+    local === LOCAL_TODOS ? puntosDelCanal : puntosDelCanal.filter((p) => p.localSlug === local);
   const idsDelCanal = new Set(puntos.map((p) => p.id));
 
+  // Los meses salen de los puntos que quedaron a la vista: si un local empezó
+  // a vender en agosto, julio no se ofrece en vez de abrir vacío.
   const valores = valoresTodos.filter((v) => idsDelCanal.has(v.delivery_point_id));
   const meses = mesesConDatos(valores);
   const mes = leerMes(filtros.mes, meses);
@@ -139,6 +162,7 @@ export default async function DeliveryPage({
       extra={
         <div className="flex items-center gap-2">
           <FiltroCanal actual={canal} canales={[...CANALES]} />
+          <FiltroLocal actual={local} locales={locales} />
           <FiltroMeses actual={mes} meses={meses} conTodo={false} />
         </div>
       }
@@ -152,7 +176,9 @@ export default async function DeliveryPage({
         <div className="p-7">
           <Card>
             <SinDato>
-              Todavía no hay datos de {nombreCanal} cargados. Los trae el sync desde su planilla.
+              {local === LOCAL_TODOS
+              ? `Todavía no hay datos de ${nombreCanal} cargados. Los trae el sync desde su planilla.`
+              : `${nombreLocal} no tiene datos cargados en ${nombreCanal}.`}
             </SinDato>
           </Card>
         </div>
@@ -167,7 +193,8 @@ export default async function DeliveryPage({
       <div className="space-y-8 p-7">
         <p className="text-xs text-[var(--color-piedra)]">
           <strong className="font-medium text-[var(--color-tinta)]">
-            {nombreCanal} · {etiquetaMes(mes)}
+            {nombreCanal} · {local === LOCAL_TODOS ? "todos los locales" : nombreLocal} ·{" "}
+            {etiquetaMes(mes)}
           </strong>{" "}
           · {filas.length} de {activos.length} puntos de venta con datos
           {cierre && ` · cierre de la planilla al ${cierre.slice(8, 10)}/${cierre.slice(5, 7)}`}
@@ -215,7 +242,7 @@ export default async function DeliveryPage({
         <p className="text-xs text-[var(--color-piedra)]">{notaDeLaCuenta(defs)}</p>
 
         <section>
-          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
             Puntos de venta
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
@@ -224,12 +251,16 @@ export default async function DeliveryPage({
             Woops— cocinan dentro de un local de Censurado y se venden aparte en las apps.
             {canal === "rappi" &&
               " Turbo es la tienda rápida de Rappi: es un punto de venta propio y no se suma al del local."}
+            {local !== LOCAL_TODOS &&
+              ` Filtrado por ${nombreLocal}: acá está todo lo que sale de esa cocina en ${nombreCanal}.`}
           </p>
           <Tabla>
             <thead>
               <tr>
                 <Th>Punto de venta</Th>
-                <Th>Local</Th>
+                {/* Con un local elegido, la columna repetiría el mismo valor
+                    en todas las filas: ya lo dice el filtro. */}
+                {local === LOCAL_TODOS && <Th>Local</Th>}
                 {defs.map((d) => (
                   <Th key={d.id} className={d.unidad === "texto" ? "" : "text-right"}>
                     {d.nombre}
@@ -244,7 +275,11 @@ export default async function DeliveryPage({
                       ("Lomos la Catedral · Urca"): repetirlos al lado sería
                       decir dos veces lo mismo. */}
                   <Td className="whitespace-nowrap font-medium">{f.punto.name}</Td>
-                  <Td className="whitespace-nowrap text-[var(--color-piedra)]">{f.punto.local}</Td>
+                  {local === LOCAL_TODOS && (
+                    <Td className="whitespace-nowrap text-[var(--color-piedra)]">
+                      {f.punto.local}
+                    </Td>
+                  )}
                   {defs.map((d) => {
                     const celda = f.valores.get(d.clave);
                     const texto =
@@ -274,7 +309,7 @@ export default async function DeliveryPage({
             la sección no aparece vacía: no aparece. */}
         {motivosDelMes.length > 0 && (
           <section>
-            <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+            <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
               Motivos de reclamo
             </h2>
             <p className="mb-3 text-xs text-[var(--color-piedra)]">

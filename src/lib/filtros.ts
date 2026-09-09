@@ -93,6 +93,26 @@ export function mesAnterior(mes: string, disponibles: string[]): string | null {
   return i >= 0 && i + 1 < disponibles.length ? disponibles[i + 1] : null;
 }
 
+// ── Local (delivery) ─────────────────────────────────────────────────────
+//
+// Delivery mide puntos de venta, no locales: Urca tiene tres tiendas en Rappi
+// —el local, su Turbo y la dark kitchen que cocina adentro— y cada una se mide
+// aparte. Este filtro las junta: elegir un local es mirar todo lo que sale de
+// esa cocina en esa app.
+//
+// Como "todas", "todos" es un valor real y no la ausencia de filtro.
+
+export const LOCAL_TODOS = "todos";
+
+/** El local elegido, o "todos". Un slug que este canal no tiene cae en "todos". */
+export function leerLocal(
+  valor: string | string[] | undefined,
+  slugsValidos: string[],
+): string {
+  const v = Array.isArray(valor) ? valor[0] : valor;
+  return v && slugsValidos.includes(v) ? v : LOCAL_TODOS;
+}
+
 // ── Marca ────────────────────────────────────────────────────────────────
 //
 // "todas" es un valor real y no la ausencia de filtro: así el botón activo

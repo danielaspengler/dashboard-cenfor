@@ -7,6 +7,13 @@
   --color-hueso: #faf9f7;
   --color-piedra: #8a8a84;
   --color-borde: #e5e3df;
+  /* Gris oscuro: los rótulos que titulan algo —encabezados de tabla,
+     etiquetas de tarjeta, títulos de sección— sin llegar al negro del dato,
+     que es lo que tiene que leerse primero. */
+  --color-grafito: #55544e;
+  /* Fondo de los encabezados de tabla, un tono más marcado que el hueso del
+     cuerpo para que la fila de títulos se despegue de los datos. */
+  --color-nube: #f1efeb;
 }
 
 body {

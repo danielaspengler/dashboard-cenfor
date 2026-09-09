@@ -52,7 +52,7 @@ export default async function MsAuditoriasPage({
     <>
       <PageHeader
         titulo="Mystery Shopper y Auditorías"
-        bajada="Puntajes calculados por las planillas del cliente · Excelente ≥90 · Bueno ≥75 · Regular ≥60"
+        bajada="Puntajes calculados por las planillas del cliente · mystery shopper ≥90 excelente, ≥75 bueno, ≥60 regular · auditoría ≥95, ≥90, ≥70, ≥50"
         extra={<FiltroMeses actual={mes} meses={meses} />}
       />
 
@@ -85,7 +85,7 @@ export default async function MsAuditoriasPage({
         </div>
 
         <section>
-          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
             Visitas de mystery shopper
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
@@ -101,18 +101,12 @@ export default async function MsAuditoriasPage({
                 <Th>Tipo</Th>
                 <Th className="text-right">Puntaje</Th>
                 <Th>Clasificación</Th>
-                <Th>Dónde perdió puntos</Th>
               </tr>
             </thead>
             <tbody>
               {visitas.map((v) => {
                 const local = v.location_id ? localPorId.get(v.location_id) : null;
                 const nivel = nivelDe(v.score_pct);
-                // La sección más floja de la visita: es lo accionable.
-                const secciones = Object.entries(v.sections ?? {});
-                const peor = secciones.length
-                  ? secciones.reduce((a, b) => (a[1] <= b[1] ? a : b))
-                  : null;
 
                 return (
                   <tr key={v.id} className="hover:bg-[var(--color-hueso)]">
@@ -143,9 +137,6 @@ export default async function MsAuditoriasPage({
                         <span style={{ color: nivel?.color }}>{v.classification}</span>
                       )}
                     </Td>
-                    <Td className="text-xs text-[var(--color-piedra)]">
-                      {peor ? `${peor[0]}: ${peor[1].toFixed(0)}%` : "—"}
-                    </Td>
                   </tr>
                 );
               })}
@@ -154,12 +145,14 @@ export default async function MsAuditoriasPage({
         </section>
 
         <section>
-          <h2 className="mb-1 text-sm font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
             Auditorías presenciales
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
             La planilla de origen guarda solo la última auditoría de cada local. Acá queda el
-            histórico completo: cada corrida se archiva aunque el cliente pise la pestaña.
+            histórico completo: cada corrida se archiva aunque el cliente pise la pestaña. Los
+            cortes de color son los de la propia planilla: 95 se cumple totalmente · 90
+            mayoritariamente · 70 en buena parte · 50 en partes.
           </p>
           <Tabla>
             <thead>
@@ -168,7 +161,6 @@ export default async function MsAuditoriasPage({
                 <Th>Local</Th>
                 <Th>Auditor</Th>
                 <Th className="text-right">Puntaje</Th>
-                <Th>Pestaña de origen</Th>
               </tr>
             </thead>
             <tbody>
@@ -180,9 +172,8 @@ export default async function MsAuditoriasPage({
                     <Td className="font-medium">{local?.name ?? <SinDato>—</SinDato>}</Td>
                     <Td className="text-[var(--color-piedra)]">{a.auditor ?? "—"}</Td>
                     <Td className="text-right">
-                      <Puntaje pct={a.score_pct} />
+                      <Puntaje pct={a.score_pct} escala="auditoria" />
                     </Td>
-                    <Td className="text-xs text-[var(--color-piedra)]">{a.source_sheet}</Td>
                   </tr>
                 );
               })}

@@ -1,4 +1,4 @@
-import { nivelDe } from "@/lib/marca";
+import { nivelAuditoria, nivelDe } from "@/lib/marca";
 
 export function PageHeader({
   titulo,
@@ -9,11 +9,17 @@ export function PageHeader({
   bajada?: string;
   extra?: React.ReactNode;
 }) {
+  // La franja del título se despega del cuerpo: fondo blanco sobre el hueso de
+  // la página, borde inferior de 2px y una barra de acento a la izquierda del
+  // título. Es la única zona de la pantalla que dice dónde estás.
   return (
-    <header className="flex items-end justify-between border-b border-[var(--color-borde)] bg-white px-7 py-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{titulo}</h1>
-        {bajada && <p className="mt-0.5 text-sm text-[var(--color-piedra)]">{bajada}</p>}
+    <header className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--color-tinta)] bg-white px-7 py-6">
+      <div className="flex items-start gap-3">
+        <span className="mt-1 h-7 w-1 shrink-0 rounded-full bg-[var(--color-tinta)]" />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
+          {bajada && <p className="mt-0.5 text-sm text-[var(--color-piedra)]">{bajada}</p>}
+        </div>
       </div>
       {extra}
     </header>
@@ -22,7 +28,7 @@ export function PageHeader({
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-[var(--color-borde)] bg-white p-5 ${className}`}>
+    <div className={`rounded-xl border-2 border-[var(--color-borde)] bg-white p-5 ${className}`}>
       {children}
     </div>
   );
@@ -41,7 +47,9 @@ export function Dato({
 }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-[var(--color-piedra)]">{etiqueta}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
+        {etiqueta}
+      </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={color ? { color } : undefined}>
         {valor}
       </div>
@@ -55,8 +63,22 @@ export function SinDato({ children = "Sin datos" }: { children?: React.ReactNode
   return <span className="text-sm italic text-[var(--color-piedra)]">{children}</span>;
 }
 
-export function Puntaje({ pct }: { pct: number | null | undefined }) {
-  const nivel = nivelDe(pct);
+/**
+ * Un puntaje pintado con el semáforo que le corresponde.
+ *
+ * `escala` existe porque las dos fuentes usan cortes distintos, y los dos
+ * salen de la planilla del cliente: mystery shopper clasifica en cuatro
+ * niveles (90/75/60) y la auditoría en cinco (95/90/70/50). Pintar una
+ * auditoría con los cortes de la otra es inventar un criterio.
+ */
+export function Puntaje({
+  pct,
+  escala = "mystery",
+}: {
+  pct: number | null | undefined;
+  escala?: "mystery" | "auditoria";
+}) {
+  const nivel = escala === "auditoria" ? nivelAuditoria(pct) : nivelDe(pct);
   if (pct === null || pct === undefined || !nivel) return <SinDato>—</SinDato>;
   return (
     <span className="font-semibold tabular-nums" style={{ color: nivel.color }}>
@@ -90,16 +112,23 @@ export function EnRevision() {
 
 export function Tabla({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--color-borde)] bg-white">
+    <div className="overflow-x-auto rounded-xl border-2 border-[var(--color-borde)] bg-white">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   );
 }
 
+/**
+ * El encabezado de una columna.
+ *
+ * La fila de títulos va sobre fondo propio y con el borde de abajo más
+ * marcado: en una tabla de catorce columnas hay que poder volver al encabezado
+ * sin buscarlo.
+ */
 export function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return (
     <th
-      className={`border-b border-[var(--color-borde)] px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-[var(--color-piedra)] ${className}`}
+      className={`border-b-2 border-[var(--color-borde)] bg-[var(--color-nube)] px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--color-grafito)] ${className}`}
     >
       {children}
     </th>

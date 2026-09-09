@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MES_TODO, etiquetaMes } from "@/lib/filtros";
+import { LOCAL_TODOS, MES_TODO, etiquetaMes } from "@/lib/filtros";
 
 // Los únicos componentes de cliente del tablero, además del menú. Solo
 // escriben el filtro en la URL: quien vuelve a calcular es el servidor.
@@ -11,6 +11,28 @@ function Grupo({ children }: { children: React.ReactNode }) {
     <div className="flex items-center gap-0.5 rounded-lg border border-[var(--color-borde)] bg-white p-0.5">
       {children}
     </div>
+  );
+}
+
+// Los dos desplegables del tablero —fecha y local— se ven igual.
+const CLASE_SELECT =
+  "rounded-lg border border-[var(--color-borde)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-tinta)]";
+
+/**
+ * Un desplegable con su rótulo al lado.
+ *
+ * Sin el rótulo, "Agosto 2026" y "Todos los locales" son dos cajas iguales y
+ * hay que abrirlas para saber qué filtran. El `label` envuelve al `select`, así
+ * que el texto también es zona de clic.
+ */
+function Desplegable({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <label className="flex items-center gap-1.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
+        {rotulo}
+      </span>
+      {children}
+    </label>
   );
 }
 
@@ -70,9 +92,11 @@ function useCambiarParam() {
  * `conTodo` en false lo usa Delivery: lo que publican las apps son cierres
  * mensuales, y "Todo" tendría que promediar agosto con julio.
  *
- * Con muchos meses una fila de botones no entra, así que a partir de seis pasa
- * a ser un `select`. Es el mismo filtro con otra forma, no otro filtro: hoy
- * son dos o tres meses y se ven todos de una.
+ * Es un desplegable siempre, incluso con dos meses cargados. Antes eran botones
+ * hasta seis meses y `select` de ahí en adelante: el control cambiaba de forma
+ * solo, y en un tablero que acumula un mes por mes esa forma dura poco. Con el
+ * desplegable el filtro se ve igual desde la primera corrida hasta la número
+ * treinta, y ocupa lo mismo al lado del canal y el local.
  */
 export function FiltroMeses({
   actual,
@@ -92,13 +116,13 @@ export function FiltroMeses({
   // tienen que ser la misma dirección.
   const porDefecto = conTodo ? MES_TODO : meses[0];
 
-  if (opciones.length > 6) {
-    return (
+  return (
+    <Desplegable rotulo="Fecha">
       <select
         value={actual}
         onChange={(e) => cambiar("mes", e.target.value, e.target.value === porDefecto)}
-        aria-label="Mes"
-        className="rounded-lg border border-[var(--color-borde)] bg-white px-2.5 py-1.5 text-xs text-[var(--color-tinta)]"
+        aria-label="Fecha"
+        className={CLASE_SELECT}
       >
         {opciones.map((m) => (
           <option key={m} value={m}>
@@ -106,17 +130,46 @@ export function FiltroMeses({
           </option>
         ))}
       </select>
-    );
-  }
+    </Desplegable>
+  );
+}
+
+/**
+ * El filtro de local de Delivery.
+ *
+ * Va en `select` y no en botones: son hasta diez locales y una fila de
+ * botones no entra al lado del canal y el mes.
+ *
+ * Cada opción dice cuántos puntos de venta junta, porque es la pregunta que
+ * sigue: en Rappi, Urca son tres tiendas y Poeta Lugones una sola.
+ */
+export function FiltroLocal({
+  actual,
+  locales,
+}: {
+  actual: string;
+  locales: { slug: string; nombre: string; puntos: number }[];
+}) {
+  const cambiar = useCambiarParam();
+  // Un solo local no es una elección: no se dibuja el control.
+  if (locales.length <= 1) return null;
 
   return (
-    <Grupo>
-      {opciones.map((m) => (
-        <Boton key={m} activo={actual === m} onClick={() => cambiar("mes", m, m === porDefecto)}>
-          {etiquetaMes(m)}
-        </Boton>
-      ))}
-    </Grupo>
+    <Desplegable rotulo="Local">
+      <select
+        value={actual}
+        onChange={(e) => cambiar("local", e.target.value, e.target.value === LOCAL_TODOS)}
+        aria-label="Local"
+        className={CLASE_SELECT}
+      >
+        <option value={LOCAL_TODOS}>Todos los locales</option>
+        {locales.map((l) => (
+          <option key={l.slug} value={l.slug}>
+            {l.nombre} ({l.puntos})
+          </option>
+        ))}
+      </select>
+    </Desplegable>
   );
 }
 
