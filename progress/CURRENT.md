@@ -7,7 +7,7 @@
 > archivo (estado). El detalle rico de todo lo construido antes del arnés está en
 > `../../memory.md` y `../HANDOFF.md`.
 
-**Última actualización:** 2026-09-08
+**Última actualización:** 2026-09-09
 **Feature activa:** ninguna. C9 y C10 (Delivery, los tres canales) quedaron cerradas.
 **Próxima:** C11 — identidad visual de CENFOR, cuando llegue el material del cliente.
 **En producción:** https://dashboard-cenfor.vercel.app
@@ -92,6 +92,35 @@ decimal calculados con las columnas y con el catálogo.
 
 ---
 
+## Delivery se puede mirar local por local
+
+Además del canal y el mes, Delivery filtra por **local** (`?local=censurado-urca`). Cada app
+separa en varias tiendas lo que sale de una misma cocina —Urca son cuatro puntos de venta en
+Rappi: el local, su Turbo y las dark kitchens Lomos la Catedral y Burger Club—, y el filtro
+las junta.
+
+- **Recalcula la pantalla entera**, no solo la tabla: las cinco tarjetas pasan a ser el
+  promedio de ese local, la variación se compara contra el mes anterior de ese mismo local y
+  los motivos de reclamo se recortan. Dos números en pantalla que hablan de universos
+  distintos se leen mal.
+- **Identifica el local por su slug, no por su nombre.** "Nueva Córdoba" existe en las dos
+  marcas. Hoy delivery es solo Censurado, pero el filtro no se confunde el día que Formaggio
+  venda por app.
+- **Solo se ofrecen locales con al menos un punto abierto.** Alta Córdoba ya no opera y la
+  pantalla lo saca de todos los promedios: ofrecerlo en el filtro sería ofrecer un local sin
+  números.
+- **Los meses se recalculan sobre lo filtrado.** Si un local empezó a vender en agosto, julio
+  no se ofrece en vez de abrir vacío.
+- Con un local elegido **se oculta la columna Local**: repetiría el mismo valor en todas las
+  filas y eso ya lo dice el filtro. El control es un `select` —hasta diez locales no entran
+  como botones— y cada opción dice cuántos puntos de venta junta.
+
+Verificado el 09/09/2026 con el build de producción y datos reales, los tres canales: Rappi 20
+de 21 puntos → Urca 3 de 4 y Nueva Córdoba 5 de 5; PedidosYa Nueva Córdoba 3 de 3; Uber Urca 1
+de 2; un slug inventado cae en «todos los locales».
+
+---
+
 ## El filtro de fecha es uno solo, y es por mes
 
 Las cinco pantallas usan el mismo control: **«Todo» y un mes calendario**. Reemplazó al de
@@ -110,9 +139,78 @@ agosto. El menú arrastra el mes al cambiar de sección y, si esa sección no lo
 «Todo» sigue siendo el default: con 29 reseñas y 8 visitas repartidas en dos o tres meses,
 abrir filtrado por uno daría una primera impresión de tablero medio vacío.
 
-El componente es `FiltroMeses` y pasa a `select` cuando hay más de seis meses, que es cuando
-una fila de botones deja de entrar. Verificado el 08/09/2026: 27 reseñas en agosto + 2 en
-septiembre = las 29 de «Todo».
+El componente es `FiltroMeses` y es un **desplegable siempre**, desde el 09/09/2026. Antes eran
+botones hasta seis meses y `select` de ahí en adelante: el control cambiaba de forma solo, y en
+un tablero que acumula un mes por mes esa forma dura poco. Verificado el 08/09/2026: 27 reseñas
+en agosto + 2 en septiembre = las 29 de «Todo».
+
+Los únicos filtros que siguen siendo botones son **marca** y **canal**: listas cortas y fijas
+que no crecen con el tiempo.
+
+## El score de calidad ya calcula (C14, en curso)
+
+Un número por local y por mes, con la definición del cliente (`../../TABLA_SCORE_MARCAS.md`).
+Motor en `src/lib/score.ts`, pesos en `marca.ts`. **Todavía no está en ninguna pantalla**: se
+verifica con `npx tsx scripts/probar-score.ts 2026-08`.
+
+| Marca | Modelo |
+|---|---|
+| Censurado | Auditoría 30 · Mystery 30 · Puntuaciones 20 · Operativo 20 |
+| Formaggio | Mystery 50 · Puntuaciones 50 — no se audita ni vende por apps |
+
+- **Un eje sin dato no vale cero:** su peso se reparte entre los que sí tienen. Poeta Lugones
+  no tuvo visita ni auditoría en agosto y saca 94,85 con lo que sí se midió, no un castigo.
+- **Peso cero ≠ sin dato.** Formaggio no tiene auditoría porque no se audita: esa sección no
+  aparece en su informe, sin aviso. Un eje que le corresponde y falta este mes sí se avisa.
+- **El score es del local, sin sus dark kitchens.** Las marcas B tienen su propia sección.
+- **Cada app vale una vez.** General Paz vende por Rappi con dos tiendas —la normal y la
+  Turbo—: se promedian entre sí antes de entrar, o Rappi pesaría el doble que Google.
+- **Puntuaciones = Google + Rappi + PedidosYa**, cada una ★/5×100. Uber queda afuera por
+  definición del cliente. Los textos de las reseñas no entran en ningún cálculo.
+- **Operativo = 100 − cancelados − tiempo cerrado**, promediando los canales del local. El
+  tiempo cerrado de PedidosYa viene en minutos y se convierte sobre el mes calendario (24 h ×
+  días). Rappi y Uber publican disponibilidad, que es el concepto invertido.
+- **Qué indicador de cada app es cuál lo dice el catálogo**, en la columna `rol` (migración
+  `20260909120000`): las tres apps los nombran distinto y ninguna usa la palabra
+  «rechazados» de la fórmula original. Cambiar de opinión es una fila en una tabla.
+
+**Verificado el 09/09/2026 contra el informe en papel de Carlos Paz:** el score da 87,41 y el
+PDF 87,10, y la diferencia es la auditoría, que se pisó (86,04 hoy contra 85,81 entonces). El
+eje Puntuaciones de Poeta Lugones da 92,67, **idéntico** al ejemplo de la tabla del cliente.
+Los 10 locales calculan en julio y agosto.
+
+**Pendiente de Daniela:** si los reclamos entran en el eje operativo. Hoy no entran, porque
+«rechazados» y «cancelados» resultaron ser lo mismo y la fórmula no puede restar dos veces.
+
+## Jerarquía visual (09/09/2026)
+
+Cambios pedidos por Daniela, todos en `globals.css`, `ui.tsx`, `filtros.tsx` y `marca.ts`:
+
+- **La franja del título se despega del cuerpo**: borde inferior de 2px, título en `text-2xl` y
+  una barra de acento a la izquierda. Es la zona que dice dónde estás.
+- **Tarjetas y tablas con borde de 2px.**
+- **Dos tonos de gris nuevos.** `--color-grafito` (#55544e) para todo lo que titula algo
+  —etiqueta de tarjeta, encabezado de tabla, título de sección—, que antes iba en el gris claro
+  del texto secundario; `--color-nube` (#f1efeb) como fondo de la fila de encabezados, para que
+  se despegue de los datos. Los títulos de sección además llevan barra de acento.
+- **Los desplegables llevan su rótulo al lado: Fecha y Local.** Sin él son dos cajas iguales y
+  hay que abrirlas para saber qué filtran. El `label` envuelve al `select`, así que el texto
+  también es zona de clic.
+- **Censurado amarillo (#eab308) y Formaggio rojo (#dc2626).** Los tonos oscuros de cada color:
+  el punto se dibuja sobre blanco y un amarillo pleno no se ve. Ese color aparece solo como
+  punto a la izquierda del local y en el filtro de marca — nunca como fondo con texto encima.
+  Ojo al leer: el rojo de Formaggio y el rojo del semáforo («Deficiente») conviven en la misma
+  tabla y no significan lo mismo.
+
+Sigue valiendo la regla de marca blanca: la identidad vive en `marca.ts` y `globals.css`, así
+que C11 —cuando llegue el material de CENFOR— es cambiar esos dos archivos.
+
+## Dos columnas que salieron de las tablas
+
+El 09/09/2026, a pedido de Daniela: **«Dónde perdió puntos»** de las visitas de mystery shopper
+y **«Pestaña de origen»** de las auditorías. Los dos datos siguen en la base y los sigue
+guardando el sync —`sections` y `source_sheet`, que es la llave con la que el dedup evita
+duplicar una auditoría—: dejaron de mostrarse, no se borraron.
 
 ---
 

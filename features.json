@@ -1,6 +1,6 @@
 {
   "project": "Dashboard CENFOR",
-  "updated": "2026-09-08",
+  "updated": "2026-09-09",
   "_nota": "Fuente de verdad de qué falta. Las recetas de cada feature van en specs/C{n}-{slug}/. Prefijo 'C' (CENFOR) para no confundir con las 'D' del Dashboard de Papanato ni las 'F' de Proyecto ORIGEN. Sembrado el 08/09/2026 desde HOLT/CENFOR/memory.md y proyecto-dashboard/HANDOFF.md, que son el registro de lo construido ANTES de instalar el arnés.",
   "_contexto": {
     "que_es": "Tablero de operaciones de CENFOR: reseñas de Google, mystery shopper, auditorías presenciales y delivery, alimentado solo desde planillas de Google Drive.",
@@ -68,21 +68,26 @@
     },
     {
       "id": "C12",
-      "title": "Plan de acción: entró al menú como lugar reservado. BLOQUEADA hasta definir con el cliente si las acciones las carga el equipo o las propone el tablero, quién puede cargarlas, y cuándo se cierra una.",
-      "status": "blocked"
+      "title": "Plan de acción: los carga una persona por local y por mes, decidido por Daniela el 09/09/2026 al definir el informe C14 —el informe los lleva como última hoja y los textos del PDF de muestra están escritos por una persona, no calculados—. Queda por definir con el cliente quién puede cargarlos y cuándo se cierra uno.",
+      "status": "todo"
     },
     {
       "id": "C13",
       "title": "Marketing y Administración: salieron del menú el 04/09/2026 (estaban en gris, copiadas del maestro). Vuelven agregándolas a NAVIGATION en src/lib/navigation.ts cuando haya fuente de datos.",
       "status": "todo"
+    },
+    {
+      "id": "C14",
+      "title": "Informe mensual por local, descargable. Réplica fiel del PDF que Daniela arma hoy a mano (Censurado - Carlos_Paz.pdf): score local, puntuaciones, auditoría con sus 9 dimensiones, mystery shopper con sus secciones y comentarios, métricas operativas por app, las dark kitchens del local y los planes de acción. Receta y relevamiento en specs/C14-informe-por-local/SPEC.md. Relevado el 09/09/2026: las 9 dimensiones SI están en la planilla (tabla de resultados, con peso y % por dimensión) pero NO en la misma fila en todas las pestañas —hay que buscarla por texto—; las recomendaciones de la auditora NO existen en la planilla (el bloque está vacío en las cinco pestañas revisadas): se cargan a mano. Bloqueante parcial: la fórmula del Score local (pesos 30/30/20/20, falta definir qué entra en 'Operativo' y cómo se puntúa). El PDF sale de una página imprimible del dashboard, no de un renderizador en el servidor: en el plan Hobby de Vercel una función con Chromium no entra.",
+      "status": "todo"
     }
   ],
   "_esperando_definicion_de_daniela": [
+    "FÓRMULA DEL SCORE LOCAL (C14): pesos Auditoría 30% · Mystery shopper 30% · Puntuaciones 20% · Operativo 20%. Falta qué indicadores entran en 'Operativo' y cómo se convierten a puntaje, confirmar que Puntuaciones es estrellas/5×100, y qué pasa cuando falta un componente (Formaggio no tiene delivery ni auditorías; Luuma no tiene ficha de Google).",
     "\"Tiempo de espera evitable\" NO significa lo mismo en Uber (una duracion, 0:01:28) que en PedidosYa (un porcentaje, 44,9%), aunque la columna se llame igual. Conviene confirmar con cada app que se esta leyendo lo que se cree.",
     "Woops Nueva Cordoba (PedidosYa) trae 100% de cancelacion evitable en agosto con score \"-\", 0 evaluaciones y 0% de pedidos listos: parece una tienda sin actividad. Ella sola lleva el promedio de las 16 tiendas de 0% a 6,3%. Hay que confirmar con el cliente si opero.",
     "Umbrales de delivery: qué porcentaje de reclamos, cancelaciones, demora y disponibilidad es aceptable. Hoy la pantalla muestra los números sin semáforo porque el cliente no los definió — los de mystery shopper y auditorías sí vienen de su planilla.",
     "placeId de Censurado Luuma, el único local sin ficha de Google.",
-    "Umbral de aceptación de las auditorías presenciales.",
     "Qué mails van en emails_autorizados (hoy hay uno solo, el de Daniela)."
   ],
   "_tareas_manuales_de_daniela": [
@@ -94,5 +99,6 @@
     "in_progress",
     "blocked",
     "done"
-  ]
+  ],
+  "_nota_umbrales_auditoria": "Los umbrales de auditoría YA NO son un pendiente: están en la propia planilla, en el bloque «LECTURA DE LOS RESULTADOS» (0–49,99 no se cumple · 50–69,99 mínimamente aceptable · 70–89,99 aceptable, capacitar · 90–94,99 mantener y pulir · 95–100 felicitar). Encontrados el 09/09/2026 al relevar para C14. Son CINCO cortes y no coinciden con los cuatro de mystery shopper."
 }
