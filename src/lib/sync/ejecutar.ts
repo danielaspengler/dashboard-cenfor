@@ -4,7 +4,11 @@ import { aTimestampISO } from "@/lib/parsers/comunes";
 import { parseResenas, parseSnapshot } from "@/lib/parsers/resenas";
 import { parseMysteryShopper } from "@/lib/parsers/mystery";
 import { esPestañaDeAuditoria, parseAuditorias, rangosDe } from "@/lib/parsers/auditorias";
-import { parseNombresDeSeccion } from "@/lib/parsers/mystery";
+import {
+  parseComentarios,
+  parseNombresDeSeccion,
+  type ComentariosVisita,
+} from "@/lib/parsers/mystery";
 import { parseDeliveryIssues, parseIndicadores } from "@/lib/parsers/delivery";
 import { CANALES_DELIVERY, HOJAS, PLANILLAS, type Fuente } from "./fuentes";
 import {
@@ -161,6 +165,22 @@ async function syncMystery(
       });
     }
 
+    // Los comentarios de cada visita viven en la hoja de respuestas y se unen
+    // por marca temporal. Como los nombres de sección, son contenido del
+    // informe y no dato del que dependa un puntaje: si la hoja falta, las
+    // visitas se guardan igual, sin texto.
+    let comentarios = new Map<string, ComentariosVisita>();
+    try {
+      comentarios = parseComentarios(
+        await fetchSheetValues(planilla, HOJAS.mysteryRespuestas),
+      );
+    } catch {
+      descartadas.push({
+        motivo: "no se pudo leer la hoja de respuestas del formulario",
+        detalle: `${marca}: las visitas quedan sin los comentarios de la visita`,
+      });
+    }
+
     const parseada = parseMysteryShopper(valores, { marca, conBloques, nombresDeSeccion });
     descartadas.push(...parseada.descartadas);
 
@@ -185,6 +205,7 @@ async function syncMystery(
         classification: v.classification,
         sections: v.sections,
         needs_review: v.needs_review,
+        ...(v.form_timestamp ? (comentarios.get(v.form_timestamp) ?? {}) : {}),
         source: `sheets:ms-${marca}`,
         source_row_hash: v.source_row_hash,
       });

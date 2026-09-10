@@ -147,6 +147,31 @@ en agosto + 2 en septiembre = las 29 de «Todo».
 Los únicos filtros que siguen siendo botones son **marca** y **canal**: listas cortas y fijas
 que no crecen con el tiempo.
 
+## El informe por local ya se descarga (C14)
+
+`/operaciones/informe?local=<slug>&mes=YYYY-MM`, en el menú entre Delivery y Plan de acción.
+Tres hojas: el score con sus ejes y el desglose de la auditoría; la visita de mystery shopper
+con sus secciones y los comentarios; las métricas de cada app con su variación, las dark
+kitchens del local y el lugar del plan de acción.
+
+- **El PDF sale del diálogo de impresión del navegador**, no de un renderizador en el
+  servidor: en el plan Hobby de Vercel una función con Chromium adentro no entra. Lo que se ve
+  es lo que se imprime; `globals.css` oculta menú y filtros, corta las hojas y fuerza los
+  colores, que el navegador descarta por defecto.
+- **El informe sale del histórico de la base**, nunca de lo que la planilla muestra hoy: la de
+  auditorías guarda una sola auditoría por local y la pisa.
+- **Cada marca muestra su modelo.** Formaggio dice «con los dos ejes» y omite auditoría sin
+  disculparse; un eje que le corresponde y falta este mes se avisa y su peso se redistribuye.
+- **Los comentarios de la visita ya entran.** Estaban en la hoja de respuestas del formulario
+  —«lo mejor», «qué cambiaría», observaciones— y se unen con los puntajes por marca temporal:
+  5 de 5 visitas de Censurado y las 3 de Formaggio encontraron su par. Es lo único del informe
+  escrito por alguien que estuvo en el local, y va textual, entre comillas.
+- **Las secciones ya no se llaman «[TA] %Sec3».** El nombre lo pone el cliente en la hoja
+  «Configuración de Puntaje» de su planilla y el sync lo lee de ahí.
+
+Falta el plan de acción cargable (C12) y las recomendaciones de la auditora, que la planilla
+deja en blanco: hoy los dos bloques se completan a mano sobre el PDF.
+
 ## El score de calidad ya calcula (C14, en curso)
 
 Un número por local y por mes, con la definición del cliente (`../../TABLA_SCORE_MARCAS.md`).
@@ -281,6 +306,12 @@ disparar `/api/sync` con curl desde afuera para probar: para eso está `npm run 
 que corre el mismo código contra las planillas vivas sin escribir.
 
 ## Gotchas acumulados
+
+- **Una columna nueva no se puede escribir enseguida: PostgREST cachea el esquema.** El sync
+  corrió después de la migración de los comentarios, dijo «guardadas: 8» y dejó las tres
+  columnas nuevas en null, sin un error a la vista. La corrida siguiente, un minuto después,
+  las guardó bien. Después de un `alter table`, esperar y verificar el contenido, no el
+  «ok» del sync.
 
 - **Turbopack no anda en esta máquina; webpack sí.** `npm run dev` ya lleva `--webpack`. Si las
   pantallas dan 500 y `/api/sync` responde 200, esa es la firma: panic de Turbopack al compilar

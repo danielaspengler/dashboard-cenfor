@@ -37,6 +37,68 @@ export type VisitaCruda = {
   source_row_hash: string;
 };
 
+/** Lo que el mystery shopper escribió con sus palabras. */
+export type ComentariosVisita = {
+  observaciones: string | null;
+  lo_mejor: string | null;
+  a_mejorar: string | null;
+};
+
+/**
+ * Los comentarios de cada visita, desde la hoja de RESPUESTAS del formulario.
+ *
+ * La hoja que el sync lee para los puntajes no los tiene: los calcula la
+ * planilla y ahí solo hay números. El texto —lo único del informe escrito por
+ * alguien que estuvo en el local— vive en las respuestas crudas.
+ *
+ * Se indexan por marca temporal, que es la misma llave con la que se deduplica
+ * cada visita.
+ *
+ * **Censurado tiene las tres columnas dos veces**, una por bloque: su
+ * formulario se ramifica en take away y delivery, y la persona completa uno
+ * solo. Por eso no se busca "la" columna sino todas las que coinciden, y gana
+ * la primera con texto. Formaggio tiene una sola de cada una y cae en el mismo
+ * camino sin ningún caso especial.
+ */
+export function parseComentarios(valores: string[][]): Map<string, ComentariosVisita> {
+  const porTimestamp = new Map<string, ComentariosVisita>();
+  const encabezados = valores[0] ?? [];
+  if (!encabezados.length) return porTimestamp;
+
+  const columnasQue = (test: (h: string) => boolean) =>
+    encabezados.map((h, i) => (test(normalizar(String(h ?? ""))) ? i : -1)).filter((i) => i >= 0);
+
+  const cTimestamp = columnasQue((h) => h === "marca temporal")[0];
+  if (cTimestamp === undefined) return porTimestamp;
+
+  // Se buscan por lo que dicen, no por su posición: las dos planillas escriben
+  // estas preguntas distinto ("Escriba lo mejor de su de experiencia
+  // comprando" contra "¿Qué fue lo mejor de su experiencia de compra?").
+  const cObservaciones = columnasQue((h) => h.startsWith("observaciones del pedido"));
+  const cLoMejor = columnasQue((h) => h.includes("lo mejor de su"));
+  const cAMejorar = columnasQue((h) => h.includes("cambiaria") || h.includes("cambiarias"));
+
+  const primeroConTexto = (fila: string[], indices: number[]): string | null => {
+    for (const i of indices) {
+      const texto = String(fila[i] ?? "").trim();
+      if (texto) return texto;
+    }
+    return null;
+  };
+
+  for (let n = 1; n < valores.length; n++) {
+    const fila = valores[n] ?? [];
+    const timestamp = aTimestampISO(fila[cTimestamp]);
+    if (!timestamp) continue;
+    porTimestamp.set(timestamp, {
+      observaciones: primeroConTexto(fila, cObservaciones),
+      lo_mejor: primeroConTexto(fila, cLoMejor),
+      a_mejorar: primeroConTexto(fila, cAMejorar),
+    });
+  }
+  return porTimestamp;
+}
+
 /** Clasificación tal como la define la planilla: >=90 / >=75 / >=60 / resto. */
 export function clasificar(scorePct: number): string {
   if (scorePct >= 90) return "Excelente";

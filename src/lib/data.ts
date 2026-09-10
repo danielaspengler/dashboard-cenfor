@@ -89,6 +89,10 @@ export type VisitaFila = {
   classification: string | null;
   sections: Record<string, number> | null;
   needs_review: boolean;
+  /** Lo que escribió el mystery shopper. Null en las visitas anteriores al 10/09/2026. */
+  observaciones: string | null;
+  lo_mejor: string | null;
+  a_mejorar: string | null;
 };
 
 export async function getVisitas(): Promise<VisitaFila[]> {
@@ -96,7 +100,7 @@ export async function getVisitas(): Promise<VisitaFila[]> {
   const { data } = await supabase
     .from("mystery_shopper_visits")
     .select(
-      "id, location_id, visit_date, evaluator, experience_type, score_pct, classification, sections, needs_review",
+      "id, location_id, visit_date, evaluator, experience_type, score_pct, classification, sections, needs_review, observaciones, lo_mejor, a_mejorar",
     )
     .order("visit_date", { ascending: false });
   return (data ?? []) as VisitaFila[];

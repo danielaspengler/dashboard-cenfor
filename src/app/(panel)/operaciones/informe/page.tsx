@@ -411,6 +411,31 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
                       </div>
                     ))}
                   </dl>
+
+                  {/* Lo único del informe escrito por alguien que estuvo en el
+                      local. Va textual, entre comillas y sin corregir: una
+                      observación reescrita deja de ser lo que dijo la persona. */}
+                  {(v.lo_mejor || v.a_mejorar || v.observaciones) && (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {[
+                        { titulo: "Lo mejor de la visita", texto: v.lo_mejor },
+                        { titulo: "Qué cambiaría", texto: v.a_mejorar },
+                        { titulo: "Observaciones del pedido", texto: v.observaciones },
+                      ]
+                        .filter((c) => c.texto)
+                        .map((c) => (
+                          <div
+                            key={c.titulo}
+                            className="break-inside-avoid rounded-xl border-2 border-[var(--color-borde)] p-4"
+                          >
+                            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
+                              {c.titulo}
+                            </p>
+                            <p className="text-sm italic leading-relaxed">«{c.texto}»</p>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               ))
             )}

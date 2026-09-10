@@ -26,6 +26,9 @@ export const HOJAS = {
   // puntajes las titula "[TA] %Sec3"; el nombre que se le muestra al local
   // —"Asesoramiento", "Calidad de producto"— lo pone el cliente acá.
   mysteryConfig: "Configuración de Puntaje",
+  // Las respuestas crudas del formulario. De acá salen los comentarios que
+  // escribe el mystery shopper: la hoja de puntajes solo tiene números.
+  mysteryRespuestas: "Respuestas de formulario 1",
 } as const;
 
 /**
