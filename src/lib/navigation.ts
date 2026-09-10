@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   Truck,
   ListChecks,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +64,15 @@ export const NAVIGATION: NavArea[] = [
         label: "Delivery",
         href: "/operaciones/delivery",
         icon: Truck,
+        status: "activo",
+      },
+      {
+        // El documento que se le entrega a cada sucursal. Va después de las
+        // pantallas que lo alimentan: primero se mira el tablero, después se
+        // baja el informe de un local.
+        label: "Informe por local",
+        href: "/operaciones/informe",
+        icon: FileText,
         status: "activo",
       },
       {

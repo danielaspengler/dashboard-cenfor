@@ -48,11 +48,47 @@ export function clasificar(scorePct: number): string {
 // Evaluadores que no son visitas reales: cargas de prueba del formulario.
 const EVALUADORES_DE_PRUEBA = ["prueba", "test", "testing"];
 
+/**
+ * Cómo se llama cada sección, según la hoja «Configuración de Puntaje».
+ *
+ * La hoja de puntajes titula sus columnas «[TA] %Sec3», que en un informe que
+ * se le entrega a un local no dice nada. El nombre de verdad está en la hoja
+ * de configuración: «TA · Sec.3 Asesoramiento» en Censurado, y «Sec.4
+ * Experiencia en el local» en Formaggio, que no tiene bloques.
+ *
+ * Se leen de la planilla en vez de escribirlos acá porque son del cliente: el
+ * día que renombre una sección, el informe la sigue.
+ *
+ * Devuelve un mapa de la forma { "TA·SEC3": "Asesoramiento" }.
+ */
+export function parseNombresDeSeccion(valores: string[][]): Map<string, string> {
+  const nombres = new Map<string, string>();
+  for (const fila of valores ?? []) {
+    for (const celda of fila ?? []) {
+      const m = String(celda ?? "")
+        .trim()
+        .match(/^(?:(TA|DE)\s*·\s*)?Sec\.?\s*(\d+)\s+(.+)$/i);
+      if (!m) continue;
+      const clave = `${(m[1] ?? "").toUpperCase()}·SEC${m[2]}`;
+      if (!nombres.has(clave)) nombres.set(clave, m[3].trim());
+    }
+  }
+  return nombres;
+}
+
+/** La misma llave, calculada desde el encabezado de la hoja de puntajes. */
+function claveDeEncabezado(encabezado: string): string | null {
+  const m = String(encabezado).match(/^\s*(?:\[(TA|DE)\])?\s*%\s*Sec\.?\s*(\d+)/i);
+  return m ? `${(m[1] ?? "").toUpperCase()}·SEC${m[2]}` : null;
+}
+
 type Opciones = {
   /** Prefijo del hash, para que Formaggio y Censurado no colisionen. */
   marca: "formaggio" | "censurado";
   /** Censurado parte sus columnas en bloques [TA] y [DE]. */
   conBloques: boolean;
+  /** Nombres de sección leídos de la hoja de configuración de la planilla. */
+  nombresDeSeccion?: Map<string, string>;
 };
 
 export function parseMysteryShopper(
@@ -93,13 +129,19 @@ export function parseMysteryShopper(
 
   // Los % por sección se toman por nombre de encabezado: cambian entre
   // marcas y entre bloques, así que se recogen todos los que empiecen con
-  // "% Sec" o "%Sec" y se guardan tal cual vienen.
+  // "% Sec" o "%Sec".
   const columnasSeccion: { clave: string; indice: number }[] = [];
   encabezados.forEach((h, i) => {
     const t = normalizar(String(h ?? ""));
-    if (/^(\[ta\]|\[de\])?\s*%\s*sec/.test(t)) {
-      columnasSeccion.push({ clave: String(h).trim(), indice: i });
-    }
+    if (!/^(\[ta\]|\[de\])?\s*%\s*sec/.test(t)) return;
+    // Se guardan con el nombre que el cliente les puso en su hoja de
+    // configuración —«Asesoramiento», «Calidad de producto»— y no con el
+    // encabezado crudo «[TA] %Sec3», que en un informe no dice nada. Si esa
+    // hoja no se pudo leer queda el crudo, que es lo que se guardó hasta el
+    // 10/09/2026.
+    const llave = claveDeEncabezado(String(h));
+    const nombre = llave ? opciones.nombresDeSeccion?.get(llave) : undefined;
+    columnasSeccion.push({ clave: nombre ?? String(h).trim(), indice: i });
   });
 
   for (let n = iEncabezados + 1; n < valores.length; n++) {

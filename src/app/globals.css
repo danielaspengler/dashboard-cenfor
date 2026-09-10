@@ -21,3 +21,42 @@ body {
   color: var(--color-tinta);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+/* IMPRESIÓN
+   Lo que se ve en pantalla es lo que sale impreso: no hay una versión web y
+   otra para el PDF. Al imprimir desaparecen las partes del tablero que no son
+   el documento —el menú, la barra de filtros, el botón de descarga— y el fondo
+   se vuelve blanco, porque el hueso de la pantalla en papel es un rectángulo
+   gris que gasta tinta. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  nav,
+  header button,
+  header select,
+  header label {
+    display: none !important;
+  }
+
+  /* Una tarjeta o una tabla partida entre dos hojas es ilegible. */
+  section,
+  table,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Los colores de los semáforos y de las barras tienen que imprimirse: sin
+     esto el navegador los descarta para ahorrar tinta y el informe sale sin
+     la única señal que se lee de un vistazo. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

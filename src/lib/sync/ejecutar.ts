@@ -4,6 +4,7 @@ import { aTimestampISO } from "@/lib/parsers/comunes";
 import { parseResenas, parseSnapshot } from "@/lib/parsers/resenas";
 import { parseMysteryShopper } from "@/lib/parsers/mystery";
 import { esPestañaDeAuditoria, parseAuditorias, rangosDe } from "@/lib/parsers/auditorias";
+import { parseNombresDeSeccion } from "@/lib/parsers/mystery";
 import { parseDeliveryIssues, parseIndicadores } from "@/lib/parsers/delivery";
 import { CANALES_DELIVERY, HOJAS, PLANILLAS, type Fuente } from "./fuentes";
 import {
@@ -144,7 +145,23 @@ async function syncMystery(
   for (const { marca, planilla, conBloques } of marcas) {
     const valores = await fetchSheetValues(planilla, HOJAS.mystery);
     leidas += Math.max(0, valores.length - 1);
-    const parseada = parseMysteryShopper(valores, { marca, conBloques });
+
+    // Los nombres de las secciones son un adorno del informe, no un dato del
+    // que dependa el puntaje: si esa hoja falta o el cliente la renombra, las
+    // secciones quedan con el encabezado crudo y la visita se guarda igual.
+    let nombresDeSeccion: Map<string, string> | undefined;
+    try {
+      nombresDeSeccion = parseNombresDeSeccion(
+        await fetchSheetValues(planilla, HOJAS.mysteryConfig),
+      );
+    } catch {
+      descartadas.push({
+        motivo: "no se pudo leer la hoja de configuración de puntaje",
+        detalle: `${marca}: las secciones quedan con su nombre crudo`,
+      });
+    }
+
+    const parseada = parseMysteryShopper(valores, { marca, conBloques, nombresDeSeccion });
     descartadas.push(...parseada.descartadas);
 
     for (const v of parseada.filas) {

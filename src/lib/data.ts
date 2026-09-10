@@ -102,12 +102,22 @@ export async function getVisitas(): Promise<VisitaFila[]> {
   return (data ?? []) as VisitaFila[];
 }
 
+/** El desglose por dimensión que trae la tabla de resultados de la planilla. */
+export type DimensionAuditoria = {
+  letra: string;
+  nombre: string;
+  peso_pct: number | null;
+  pct: number | null;
+};
+
 export type AuditoriaFila = {
   id: string;
   location_id: string | null;
   audit_date: string;
   auditor: string | null;
   score_pct: number | null;
+  /** Vacío en las auditorías guardadas antes del 09/09/2026. */
+  categories: DimensionAuditoria[] | null;
   source_sheet: string | null;
 };
 
@@ -115,7 +125,7 @@ export async function getAuditorias(): Promise<AuditoriaFila[]> {
   const supabase = await clienteDeLectura();
   const { data } = await supabase
     .from("audits")
-    .select("id, location_id, audit_date, auditor, score_pct, source_sheet")
+    .select("id, location_id, audit_date, auditor, score_pct, categories, source_sheet")
     .order("audit_date", { ascending: false });
   return data ?? [];
 }

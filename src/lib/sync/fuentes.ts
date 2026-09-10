@@ -22,6 +22,10 @@ export const HOJAS = {
   resenas: "resenas",
   snapshot: "Rating_Snapshot",
   mystery: "Puntajes por Visita",
+  // De acá salen los nombres de las secciones del formulario. La hoja de
+  // puntajes las titula "[TA] %Sec3"; el nombre que se le muestra al local
+  // —"Asesoramiento", "Calidad de producto"— lo pone el cliente acá.
+  mysteryConfig: "Configuración de Puntaje",
 } as const;
 
 /**

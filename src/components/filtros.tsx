@@ -173,6 +173,44 @@ export function FiltroLocal({
   );
 }
 
+/**
+ * Un desplegable genérico sobre un parámetro de la URL.
+ *
+ * Lo usa el informe para elegir el local entre los diez, donde no sirve el
+ * filtro de Delivery: ese ofrece solo los locales que venden por apps y
+ * cuenta sus puntos de venta.
+ */
+export function FiltroOpciones({
+  rotulo,
+  param,
+  actual,
+  opciones,
+}: {
+  rotulo: string;
+  param: string;
+  actual: string;
+  opciones: { valor: string; etiqueta: string }[];
+}) {
+  const cambiar = useCambiarParam();
+  if (opciones.length <= 1) return null;
+  return (
+    <Desplegable rotulo={rotulo}>
+      <select
+        value={actual}
+        onChange={(e) => cambiar(param, e.target.value, false)}
+        aria-label={rotulo}
+        className={CLASE_SELECT}
+      >
+        {opciones.map((o) => (
+          <option key={o.valor} value={o.valor}>
+            {o.etiqueta}
+          </option>
+        ))}
+      </select>
+    </Desplegable>
+  );
+}
+
 export function FiltroMarca({
   actual,
   marcas,
