@@ -265,6 +265,21 @@ viaja al navegador de cualquiera que abra el dashboard.
 > `.env*` entero, pero **el commit anterior sigue en la historia de GitHub**: por eso las claves
 > que estaban ahí adentro se cambiaron todas. El repo es privado.
 
+## El cron dispara solo — verificado el 10/09/2026
+
+Era lo único que figuraba como «sin verificar» desde que el proyecto salió a producción. Se
+confirmó por la vía más directa: los cuatro commits del 09/09 se publicaron, y a la mañana
+siguiente **las seis auditorías ya tenían su desglose por dimensión en la base** —9
+dimensiones, 7 en Luuma— sin que nadie corriera nada a mano. El sync automático levantó el
+código nuevo y guardó el dato.
+
+**Producción responde 403 a las peticiones automatizadas, y está bien.** Es la mitigación de
+sistema de Vercel: en Firewall → Overview del proyecto se ven las peticiones «Challenged»,
+con Bot Protection *Inactive* y cero reglas propias. No bloquea a las personas —cualquiera
+entra con su navegador— ni al cron, que sale desde adentro de Vercel. Lo que sí impide es
+disparar `/api/sync` con curl desde afuera para probar: para eso está `npm run ensayo-sync`,
+que corre el mismo código contra las planillas vivas sin escribir.
+
 ## Gotchas acumulados
 
 - **Turbopack no anda en esta máquina; webpack sí.** `npm run dev` ya lleva `--webpack`. Si las
