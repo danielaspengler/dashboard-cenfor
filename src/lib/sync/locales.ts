@@ -18,6 +18,7 @@ type FilaLocal = {
   google_place_id: string | null;
   ms_form_label: string | null;
   audit_sheet_label: string | null;
+  looker_label: string | null;
   brands: { slug: string } | { slug: string }[] | null;
 };
 
@@ -28,6 +29,14 @@ export type Directorio = {
   porFormularioMS: Map<string, string>;
   /** "marca|texto normalizado del campo LOCAL de la auditoría" → id del local. */
   porAuditoria: Map<string, string>;
+  /**
+   * "marca|texto normalizado del local en la planilla del Looker" → id.
+   *
+   * Esa planilla escribe "Recta Martinolli" donde el tablero dice "Recta".
+   * Como en el resto de las fuentes, la equivalencia vive en una columna de
+   * `locations` y no en una lista dentro del código.
+   */
+  porLooker: Map<string, string>;
   /**
    * "canal|texto normalizado del punto de venta" → id del punto de venta.
    *
@@ -49,13 +58,16 @@ export async function cargarDirectorio(
 ): Promise<Directorio> {
   const { data, error } = await supabase
     .from("locations")
-    .select("id, slug, google_place_id, ms_form_label, audit_sheet_label, brands(slug)");
+    .select(
+      "id, slug, google_place_id, ms_form_label, audit_sheet_label, looker_label, brands(slug)",
+    );
   if (error) throw new Error(`No se pudo leer locations: ${error.message}`);
 
   const dir: Directorio = {
     porPlaceId: new Map(),
     porFormularioMS: new Map(),
     porAuditoria: new Map(),
+    porLooker: new Map(),
     porPuntoDelivery: new Map(),
     total: (data ?? []).length,
   };
@@ -66,6 +78,7 @@ export async function cargarDirectorio(
     if (!marca) continue;
     if (l.ms_form_label) dir.porFormularioMS.set(clave(marca, l.ms_form_label), l.id);
     if (l.audit_sheet_label) dir.porAuditoria.set(clave(marca, l.audit_sheet_label), l.id);
+    if (l.looker_label) dir.porLooker.set(clave(marca, l.looker_label), l.id);
   }
 
   // Los puntos inactivos se cargan igual: siguen teniendo histórico en la
@@ -113,4 +126,13 @@ export function localPorAuditoria(
   texto: string,
 ): string | undefined {
   return dir.porAuditoria.get(clave(marca, texto));
+}
+
+/** Local a partir del texto con el que lo nombra la planilla del Looker. */
+export function localPorLooker(
+  dir: Directorio,
+  marca: string,
+  texto: string,
+): string | undefined {
+  return dir.porLooker.get(clave(marca, texto));
 }

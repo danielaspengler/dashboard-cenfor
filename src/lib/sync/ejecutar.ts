@@ -4,6 +4,7 @@ import { aTimestampISO } from "@/lib/parsers/comunes";
 import { parseResenas, parseSnapshot } from "@/lib/parsers/resenas";
 import { parseMysteryShopper } from "@/lib/parsers/mystery";
 import { esPestañaDeAuditoria, parseAuditorias, rangosDe } from "@/lib/parsers/auditorias";
+import { parseEconomico } from "@/lib/parsers/economico";
 import {
   parseComentarios,
   parseNombresDeSeccion,
@@ -14,6 +15,7 @@ import { CANALES_DELIVERY, HOJAS, PLANILLAS, type Fuente } from "./fuentes";
 import {
   cargarDirectorio,
   localPorAuditoria,
+  localPorLooker,
   localPorFormularioMS,
   puntoDelivery,
   type Directorio,
@@ -381,6 +383,44 @@ async function syncDelivery(
   };
 }
 
+/**
+ * Los números económicos, desde la planilla que alimenta el Looker.
+ *
+ * Es la única fuente que no habla de calidad. Solo Censurado tiene datos
+ * cargados: Formaggio no aparece en esa planilla, y Luuma tampoco. Un local
+ * sin equivalencia se descarta y se informa, como en todas las demás.
+ */
+async function syncEconomico(
+  supabase: SupabaseClient,
+  dir: Directorio,
+): Promise<ReporteFuente> {
+  const valores = await fetchSheetValues(PLANILLAS.economico, HOJAS.economico);
+  const { filas, descartadas } = parseEconomico(valores);
+
+  const aGuardar: Record<string, unknown>[] = [];
+  for (const f of filas) {
+    const location_id = localPorLooker(dir, "censurado", f.looker_label);
+    if (!location_id) {
+      descartadas.push({
+        motivo: "local de la planilla del Looker sin equivalencia en Censurado",
+        detalle: `«${f.looker_label}» · ${f.period_start.slice(0, 7)}`,
+      });
+      continue;
+    }
+    const { looker_label: _ignorado, ...datos } = f;
+    aGuardar.push({ location_id, ...datos });
+  }
+
+  await guardar(supabase, "financials", aGuardar, "source_row_hash");
+  return {
+    fuente: "economico",
+    ok: true,
+    leidas: Math.max(0, valores.length - 1),
+    guardadas: aGuardar.length,
+    descartadas,
+  };
+}
+
 const CORREDORES: Record<
   Fuente,
   (s: SupabaseClient, d: Directorio) => Promise<ReporteFuente>
@@ -390,6 +430,7 @@ const CORREDORES: Record<
   mystery: syncMystery,
   auditorias: syncAuditorias,
   delivery: syncDelivery,
+  economico: syncEconomico,
 };
 
 /**

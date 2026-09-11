@@ -15,6 +15,10 @@ export const PLANILLAS = {
   deliveryRappi: "1axROvefosXxlhCiCqK9iTj4ulPaOvM-gMxYw2jirzjU",
   deliveryUber: "1ywM7qEAjxn75CEd3Q4av8wF4TLl0dpv7YvKWdE7PoEk",
   deliveryPedidosYa: "1l_ktEtd39w53NAuTDyFszLWIrWbyWTScsRlb_8XHkIk",
+  // La que alimenta el Looker "Informe franquicias Censurado": ventas, costos
+  // y rentabilidad por local y por mes. Es la primera fuente que no habla de
+  // calidad sino de plata.
+  economico: "1e6I4IBC-gTm-MBjbSpI7tV7WD0StCKZgaYL1hk26EmY",
 } as const;
 
 /** Hoja de la que sale cada cosa. */
@@ -29,6 +33,7 @@ export const HOJAS = {
   // Las respuestas crudas del formulario. De acá salen los comentarios que
   // escribe el mystery shopper: la hoja de puntajes solo tiene números.
   mysteryRespuestas: "Respuestas de formulario 1",
+  economico: "Agrupado Looker",
 } as const;
 
 /**
@@ -88,5 +93,6 @@ export const FUENTES = [
   "mystery",
   "auditorias",
   "delivery",
+  "economico",
 ] as const;
 export type Fuente = (typeof FUENTES)[number];
