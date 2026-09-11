@@ -7,9 +7,11 @@
 > archivo (estado). El detalle rico de todo lo construido antes del arnés está en
 > `../../memory.md` y `../HANDOFF.md`.
 
-**Última actualización:** 2026-09-09
-**Feature activa:** ninguna. C9 y C10 (Delivery, los tres canales) quedaron cerradas.
-**Próxima:** C11 — identidad visual de CENFOR, cuando llegue el material del cliente.
+**Última actualización:** 2026-09-11
+**Feature activa:** C15 — Resumen administrativo. La cañería está hecha y verificada; **falta
+la pantalla**, con la receta completa en `specs/C15-resumen-administrativo/SPEC.md`.
+**En stand by:** C12 (plan de acción), por decisión de Daniela.
+**Cerradas esta semana:** C14 (informe por local) y el acceso del cliente.
 **En producción:** https://dashboard-cenfor.vercel.app
 
 ---
@@ -146,6 +148,29 @@ en agosto + 2 en septiembre = las 29 de «Todo».
 
 Los únicos filtros que siguen siendo botones son **marca** y **canal**: listas cortas y fijas
 que no crecen con el tiempo.
+
+## Los números económicos ya están en la base (C15, sin pantalla)
+
+Séptima fuente del sync, y la primera que no habla de calidad: ventas, órdenes, ticket
+promedio, CMV, rentabilidad y estructura de costos por local y por mes, desde la planilla que
+alimenta el Looker «Informe franquicias Censurado». **102 filas, cero descartadas**,
+enero 2025 → agosto 2026, seis locales de Censurado. Luuma no está en esa planilla y
+Formaggio no tiene datos económicos.
+
+- Tabla propia (`financials`) con columnas fijas, **no** el catálogo de delivery: aquel
+  existe porque cada app publica indicadores distintos, y acá son las mismas trece columnas
+  para todos los locales.
+- **La rentabilidad puede ser negativa** y así se guarda: junio de 2026 cerró en −3,29%.
+- **Los costos variables YA INCLUYEN el CMV.** Reconstruir el margen restando los dos da
+  −37% sobre 2026. Por eso `totalizar()` no recalcula el margen: toma el de la planilla y lo
+  pondera por ventas.
+- «Recta Martinolli» es «Recta»: la equivalencia vive en `locations.looker_label`.
+
+**Falta la pantalla**, y antes una decisión: el Looker **mezcla períodos** —sus tarjetas de
+ventas y órdenes son de 2026, las cuatro de porcentaje son promedios de los 20 meses— y
+promedia los porcentajes entre locales sin ponderar. Copiarlo tal cual reproduce esa mezcla;
+usar el criterio del resto del tablero da números distintos de los que el cliente ya vio.
+Todo relevado en `specs/C15-resumen-administrativo/SPEC.md`.
 
 ## El informe por local ya se descarga (C14)
 

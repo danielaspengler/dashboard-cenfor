@@ -1,6 +1,6 @@
 {
   "project": "Dashboard CENFOR",
-  "updated": "2026-09-09",
+  "updated": "2026-09-11",
   "_nota": "Fuente de verdad de qué falta. Las recetas de cada feature van en specs/C{n}-{slug}/. Prefijo 'C' (CENFOR) para no confundir con las 'D' del Dashboard de Papanato ni las 'F' de Proyecto ORIGEN. Sembrado el 08/09/2026 desde HOLT/CENFOR/memory.md y proyecto-dashboard/HANDOFF.md, que son el registro de lo construido ANTES de instalar el arnés.",
   "_contexto": {
     "que_es": "Tablero de operaciones de CENFOR: reseñas de Google, mystery shopper, auditorías presenciales y delivery, alimentado solo desde planillas de Google Drive.",
@@ -68,8 +68,8 @@
     },
     {
       "id": "C12",
-      "title": "Plan de acción: los carga una persona por local y por mes, decidido por Daniela el 09/09/2026 al definir el informe C14 —el informe los lleva como última hoja y los textos del PDF de muestra están escritos por una persona, no calculados—. Queda por definir con el cliente quién puede cargarlos y cuándo se cierra uno.",
-      "status": "todo"
+      "title": "Plan de accion: EN STAND BY por decision de Daniela (11/09/2026). Es la ultima hoja del informe por local y hoy figura como lugar reservado. Cuando se retome hay que definir: quien carga y edita, que campos tiene una accion (origen, responsable, fecha limite, estado), como se cierra, y si una accion no hecha se arrastra sola al mes siguiente.",
+      "status": "blocked"
     },
     {
       "id": "C13",
@@ -78,11 +78,20 @@
     },
     {
       "id": "C14",
-      "title": "Informe mensual por local, descargable. Réplica fiel del PDF que Daniela arma hoy a mano (Censurado - Carlos_Paz.pdf): score local, puntuaciones, auditoría con sus 9 dimensiones, mystery shopper con sus secciones y comentarios, métricas operativas por app, las dark kitchens del local y los planes de acción. Receta y relevamiento en specs/C14-informe-por-local/SPEC.md. Relevado el 09/09/2026: las 9 dimensiones SI están en la planilla (tabla de resultados, con peso y % por dimensión) pero NO en la misma fila en todas las pestañas —hay que buscarla por texto—; las recomendaciones de la auditora NO existen en la planilla (el bloque está vacío en las cinco pestañas revisadas): se cargan a mano. Bloqueante parcial: la fórmula del Score local (pesos 30/30/20/20, falta definir qué entra en 'Operativo' y cómo se puntúa). El PDF sale de una página imprimible del dashboard, no de un renderizador en el servidor: en el plan Hobby de Vercel una función con Chromium no entra.",
+      "title": "Informe mensual por local, descargable. HECHO el 10/09/2026: tres hojas —score con sus ejes y el desglose de la auditoria; mystery shopper con secciones y comentarios; metricas por app, dark kitchens y el lugar del plan de accion—. El PDF sale del dialogo de impresion del navegador (en Hobby de Vercel no entra una funcion con Chromium). El informe se arma con el HISTORICO de la base, no con lo que la planilla muestra hoy. Verificado al centesimo contra el PDF en papel de Carlos Paz. Falta solo la hoja de plan de accion (C12, en stand by).",
+      "status": "done"
+    },
+    {
+      "id": "C15",
+      "title": "Resumen administrativo: los numeros economicos del Looker «Informe franquicias Censurado» dentro del tablero. LA CAÑERIA YA ESTA: tabla financials, septima fuente del sync corriendo (102 filas, cero descartadas, ene-2025 a ago-2026, 6 locales de Censurado) y capa de datos en src/lib/economico.ts. FALTA LA PANTALLA y el area Administracion en el menu. Receta completa, con el relevamiento de como calcula cada tarjeta el Looker, en specs/C15-resumen-administrativo/SPEC.md. Bloqueante: decidir si los totales se promedian (como hace el Looker) o se ponderan por ventas (criterio del resto del tablero) — dan numeros distintos de los que el cliente ya vio.",
       "status": "todo"
     }
   ],
   "_esperando_definicion_de_daniela": [
+    "Agosto 2026 cayo a 4.600 ordenes desde 6.708 en julio, con ventas casi iguales. Confirmar si el mes esta incompleto en la planilla o si la caida es real.",
+    "C15 · como se compone la rentabilidad: en esa planilla los costos variables YA INCLUYEN el CMV, asi que no se puede recalcular restando los dos.",
+    "C15 · que es «Compras/ventas» y por que 25 de las 102 filas lo traen en cero. Es la unica tarjeta del Looker que no se pudo reproducir.",
+    "C15 · como se totaliza: el Looker PROMEDIA los porcentajes entre locales y mezcla periodos —ventas y ordenes de 2026, los porcentajes de los 20 meses—. Hay que elegir un criterio y un solo periodo para toda la pantalla.",
     "FÓRMULA DEL SCORE LOCAL (C14): pesos Auditoría 30% · Mystery shopper 30% · Puntuaciones 20% · Operativo 20%. Falta qué indicadores entran en 'Operativo' y cómo se convierten a puntaje, confirmar que Puntuaciones es estrellas/5×100, y qué pasa cuando falta un componente (Formaggio no tiene delivery ni auditorías; Luuma no tiene ficha de Google).",
     "\"Tiempo de espera evitable\" NO significa lo mismo en Uber (una duracion, 0:01:28) que en PedidosYa (un porcentaje, 44,9%), aunque la columna se llame igual. Conviene confirmar con cada app que se esta leyendo lo que se cree.",
     "Woops Nueva Cordoba (PedidosYa) trae 100% de cancelacion evitable en agosto con score \"-\", 0 evaluaciones y 0% de pedidos listos: parece una tienda sin actividad. Ella sola lleva el promedio de las 16 tiendas de 0% a 6,3%. Hay que confirmar con el cliente si opero.",
@@ -91,8 +100,8 @@
     "Qué mails van en emails_autorizados (hoy hay uno solo, el de Daniela)."
   ],
   "_tareas_manuales_de_daniela": [
-    "Publicar la app en Google si se quiere abrir al equipo: hoy está en modo Prueba y solo entran los mails cargados como usuarios de prueba (hasta 100).",
-    "Avisar al cliente que las tres planillas tienen las fechas con el formato roto (usan AAAA para el año, que Sheets escribe literal: '27/08/AAAA'). El sync lo esquiva leyendo los valores sin formato, pero si alguien exporta o imprime esas planillas, las fechas salen sin año."
+    "Avisar al cliente que las tres planillas tienen las fechas con el formato roto (usan AAAA para el año, que Sheets escribe literal: '27/08/AAAA'). El sync lo esquiva leyendo los valores sin formato, pero si alguien exporta o imprime esas planillas, las fechas salen sin año.",
+    "Vercel plan Hobby no habilita uso comercial y CENFOR es un cliente que paga: ahora que el cliente entra al tablero, conviene pasar a Pro."
   ],
   "_status_values": [
     "todo",
