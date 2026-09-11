@@ -305,6 +305,21 @@ entra con su navegador— ni al cron, que sale desde adentro de Vercel. Lo que s
 disparar `/api/sync` con curl desde afuera para probar: para eso está `npm run ensayo-sync`,
 que corre el mismo código contra las planillas vivas sin escribir.
 
+## El acceso del cliente, abierto (11/09/2026)
+
+- **La app se publicó en Google.** Estaba en modo Prueba, que obliga a cargar cada correo
+  también como «usuario de prueba»: dos listas para mantener en sincronía. Publicada, el
+  candado queda donde tiene que estar —el trigger sobre `auth.users` y las policies de RLS,
+  que preguntan las dos por `emails_autorizados`—. Publicar NO abre el tablero: solo permite
+  intentar el login.
+- **Para publicar hizo falta una política de privacidad.** Sin una URL válida y accesible sin
+  sesión, el botón «Publicar app» queda gris. Vive en `/privacidad`, dentro del dashboard,
+  fuera del guard, y se enlaza desde la pantalla de login.
+- **Dar acceso a alguien = una fila en `emails_autorizados`.** No hay invitaciones ni
+  contraseñas. Hoy están Daniela y `denise.lagosj@gmail.com` (CENFOR).
+- **El SMTP propio no hace falta.** Estaba anotado desde la época del magic link; con login de
+  Google no se envía ningún correo.
+
 ## Gotchas acumulados
 
 - **Una columna nueva no se puede escribir enseguida: PostgREST cachea el esquema.** El sync
