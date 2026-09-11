@@ -5,7 +5,11 @@ import { NextResponse, type NextRequest } from "next/server";
 //
 // /api/sync/* y /api/cron/* tienen su propio candado (CRON_SECRET), no sesión
 // de usuario — los dispara el cron de Vercel, no una persona logueada.
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/sync", "/api/cron"];
+//
+// /privacidad es pública porque tiene que serlo: Google exige una política de
+// privacidad accesible SIN iniciar sesión para dejar publicar la aplicación, y
+// quien la lee todavía no entró. No muestra ningún dato del tablero.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/sync", "/api/cron", "/privacidad"];
 
 export async function updateSession(request: NextRequest) {
   // Modo demostración: se enciende con MODO_DEMO=1 en .env.local y salta el

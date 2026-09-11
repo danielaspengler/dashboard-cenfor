@@ -44,6 +44,13 @@ export default function LoginPage() {
         <p className="mt-4 text-xs text-[var(--color-piedra)]">
           Solo los correos habilitados pueden acceder.
         </p>
+        {/* Google pide que la política sea alcanzable desde la pantalla de
+            inicio de sesión, no solo por su URL. */}
+        <p className="mt-2 text-xs text-[var(--color-piedra)]">
+          <a className="underline" href="/privacidad">
+            Política de privacidad
+          </a>
+        </p>
       </div>
     </div>
   );
