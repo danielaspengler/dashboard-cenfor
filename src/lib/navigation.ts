@@ -1,4 +1,6 @@
 import {
+  ChartColumn,
+  Landmark,
   LayoutDashboard,
   Star,
   ClipboardCheck,
@@ -87,8 +89,24 @@ export const NAVIGATION: NavArea[] = [
       },
     ],
   },
+  {
+    // Los números económicos de cada local. Va en un área aparte y no dentro
+    // de Operaciones: habla de plata, no de calidad, y sale de otra planilla.
+    label: "Administración",
+    slug: "administracion",
+    icon: Landmark,
+    status: "activo",
+    sections: [
+      {
+        label: "Resumen administrativo",
+        href: "/administracion/resumen",
+        icon: ChartColumn,
+        status: "activo",
+      },
+    ],
+  },
   // Marketing y Administración estaban acá en gris, copiadas del esqueleto del
-  // maestro. Salieron el 04/09/2026: un menú que anuncia dos áreas vacías
-  // promete trabajo que no está comprometido. Vuelven cuando haya fuentes que
-  // las alimenten — agregar el área a esta lista es todo lo que hace falta.
+  // maestro, y salieron el 04/09/2026: un menú que anuncia áreas vacías promete
+  // trabajo que no está comprometido. Administración volvió el 11/09/2026 con
+  // la planilla económica. Marketing sigue afuera hasta que tenga una fuente.
 ];

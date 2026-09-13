@@ -62,7 +62,34 @@ propio 2025.
 **Además, los porcentajes son promedios simples entre locales.** Nueva Córdoba factura diez
 veces más que Poeta Lugones y los dos pesan igual en el 4,94 %.
 
-## Decisiones a tomar con Daniela (bloqueantes para la pantalla)
+## Decisiones tomadas el 11/09/2026 (sesión 2)
+
+Relevadas contra la base antes de preguntar:
+
+| Tarjeta | Looker (histórico, simple) | 2026 simple | 2026 ponderado | Agosto simple | Agosto ponderado |
+|---|---|---|---|---|---|
+| % costos fijos | 18,51 | 26,40 | 25,43 | 28,65 | 26,79 |
+| % costos variables | 53,52 | 68,00 | 68,45 | 62,02 | 62,12 |
+| Rentabilidad neta | 4,94 | 4,90 | 5,39 | 8,73 | 10,43 |
+| Compras/ventas | 42,02 | 43,12 | 43,91 | 46,15 | 43,71 |
+
+Lo que más mueve los números es el período, no el criterio: el histórico esconde ocho puntos
+de costo fijo de 2026.
+
+1. **Período: el mes elegido**, para toda la pantalla. Los gráficos muestran la evolución.
+2. **Criterio: ponderado por ventas.** La pantalla aclara que no coincide con el Looker y por qué.
+3. **Compras/ventas: se muestra, y un cero es «sin dato».** 24 de los 25 ceros son enero–mayo
+   2025 en los cinco locales con esos meses (el indicador empezó a cargarse en junio 2025); el
+   restante es el primer mes de Poeta Lugones (julio 2026).
+4. **La caída de órdenes de agosto NO es real:** General Paz y Poeta Lugones tienen agosto con
+   ventas y órdenes vacías. Las 4.600 son de los otros cuatro locales. Avisar al cliente.
+5. **Bug encontrado en `totalizar()`:** divide TODAS las ventas por las órdenes, y en agosto da un
+   ticket de $40.978 en vez de ~$27.800. El ticket tiene que usar solo las ventas de filas con
+   órdenes.
+
+Sigue abierto con el cliente: qué mide Compras/ventas y cómo se compone la rentabilidad.
+
+## Decisiones a tomar con Daniela (relevamiento original)
 
 1. **¿Los totales se recalculan o se promedian?** El tablero ya tiene criterio para esto en
    delivery —los conteos se suman, las tasas se promedian, y cuando hay con qué, se

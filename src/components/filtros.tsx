@@ -179,17 +179,22 @@ export function FiltroLocal({
  * Lo usa el informe para elegir el local entre los diez, donde no sirve el
  * filtro de Delivery: ese ofrece solo los locales que venden por apps y
  * cuenta sus puntos de venta.
+ *
+ * `porDefecto`: si se elige ese valor, el parámetro se borra de la URL en vez
+ * de escribirse. El informe no lo pasa: ahí el local siempre va en la URL.
  */
 export function FiltroOpciones({
   rotulo,
   param,
   actual,
   opciones,
+  porDefecto,
 }: {
   rotulo: string;
   param: string;
   actual: string;
   opciones: { valor: string; etiqueta: string }[];
+  porDefecto?: string;
 }) {
   const cambiar = useCambiarParam();
   if (opciones.length <= 1) return null;
@@ -197,7 +202,7 @@ export function FiltroOpciones({
     <Desplegable rotulo={rotulo}>
       <select
         value={actual}
-        onChange={(e) => cambiar(param, e.target.value, false)}
+        onChange={(e) => cambiar(param, e.target.value, e.target.value === porDefecto)}
         aria-label={rotulo}
         className={CLASE_SELECT}
       >

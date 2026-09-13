@@ -21,6 +21,12 @@ export const PLANILLAS = {
   economico: "1e6I4IBC-gTm-MBjbSpI7tV7WD0StCKZgaYL1hk26EmY",
 } as const;
 
+/**
+ * El Looker que el cliente mira con los números de `PLANILLAS.economico`. El
+ * Resumen administrativo lo nombra para decir por qué sus números no coinciden.
+ */
+export const LOOKER_ECONOMICO = "Informe franquicias Censurado";
+
 /** Hoja de la que sale cada cosa. */
 export const HOJAS = {
   resenas: "resenas",

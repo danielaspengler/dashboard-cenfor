@@ -73,7 +73,7 @@
     },
     {
       "id": "C13",
-      "title": "Marketing y Administración: salieron del menú el 04/09/2026 (estaban en gris, copiadas del maestro). Vuelven agregándolas a NAVIGATION en src/lib/navigation.ts cuando haya fuente de datos.",
+      "title": "Marketing y Administración: salieron del menú el 04/09/2026 (estaban en gris, copiadas del maestro). Administración VOLVIÓ el 11/09/2026 con C15 (Resumen administrativo). Marketing sigue afuera: vuelve agregándola a NAVIGATION en src/lib/navigation.ts cuando haya fuente de datos.",
       "status": "todo"
     },
     {
@@ -83,7 +83,12 @@
     },
     {
       "id": "C15",
-      "title": "Resumen administrativo: los numeros economicos del Looker «Informe franquicias Censurado» dentro del tablero. LA CAÑERIA YA ESTA: tabla financials, septima fuente del sync corriendo (102 filas, cero descartadas, ene-2025 a ago-2026, 6 locales de Censurado) y capa de datos en src/lib/economico.ts. FALTA LA PANTALLA y el area Administracion en el menu. Receta completa, con el relevamiento de como calcula cada tarjeta el Looker, en specs/C15-resumen-administrativo/SPEC.md. Bloqueante: decidir si los totales se promedian (como hace el Looker) o se ponderan por ventas (criterio del resto del tablero) — dan numeros distintos de los que el cliente ya vio.",
+      "title": "Resumen administrativo: los numeros economicos del Looker «Informe franquicias Censurado» dentro del tablero. LA CAÑERIA YA ESTA: tabla financials, septima fuente del sync corriendo (102 filas, cero descartadas, ene-2025 a ago-2026, 6 locales de Censurado) y capa de datos en src/lib/economico.ts. FALTA LA PANTALLA y el area Administracion en el menu. Receta completa, con el relevamiento de como calcula cada tarjeta el Looker, en specs/C15-resumen-administrativo/SPEC.md. DECIDIDO el 11/09/2026: un solo periodo (el mes elegido), porcentajes ponderados por ventas, un 0 en los porcentajes es 'sin dato', Poeta Lugones julio 2026 sin rentabilidad (fila de costos incompleta), tabla por local, graficos de 13 meses. Spec aprobada: requirements.md + design.md + tasks.md (14 tareas). CERRADA el 13/09/2026, verificada por el revisor contra la base con el build de produccion (agosto: ventas 188,5 M, ticket 27.827, ordenes 4.600 sobre 4 de 6 locales; julio: rentabilidad 3,44). Se arreglaron sus tres desvios: los porcentajes solo varian sobre locales con fijos Y variables cargados en los dos meses (Poeta Lugones mostraba +27,9 pts de costos fijos contra su julio incompleto; el real es +0,1 sobre 5 locales), las dos funciones de graficos.tsx volvieron bajo las 50 lineas, y el aviso 'sin dato' dejo de duplicarse debajo de un grafico vacio. Contenido: /administracion/resumen con 7 tarjetas (cobertura y variacion sobre el universo comun), 4 bloques de graficos SVG sin dependencias y tabla por local. Regla de rentabilidad (P1): sin costos fijos o variables, la rentabilidad de la fila es sin dato. Calculo verificado con scripts/probar-economico.ts contra filas fijas y la base viva (47 chequeos).",
+      "status": "done"
+    },
+    {
+      "id": "C16",
+      "title": "Corte metodologico en auditorias presenciales: el cliente cambio la puntuacion de las planillas en agosto 2026 para ser mas exigente (el mystery shopper NO se modifico). Los puntajes de antes y despues no son comparables: ene2025-jul2026 dan 89,4% en 110 visitas y agosto 2026 da 76,9% en 6. El tablero todavia no lo sabe y va a mostrar un derrumbe de diez puntos que no ocurrio. Hay que fijar una constante de fecha de corte, no promediar a traves de ella, avisarlo en la pantalla, marcar el quiebre en la serie y REVISAR LOS UMBRALES del semaforo (con la planilla nueva ningun local llego a 90 en agosto). Receta en specs/C16-corte-metodologico-auditorias/SPEC.md. FALTA EL OK DE DANIELA y confirmar los umbrales nuevos con el cliente.",
       "status": "todo"
     }
   ],

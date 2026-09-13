@@ -161,17 +161,22 @@ export function fechaCorta(iso: string | null | undefined) {
  * hora no disponible salía como "▼ 7.8 pts" —que no son puntos, son minutos—
  * y la del contracargo como "▼ 19585.0", que no son ni pesos ni nada.
  * "Puntos" es el default porque la mayoría de los indicadores son tasas.
+ *
+ * `neutra` la dibuja en gris: en el Resumen administrativo CENFOR no definió
+ * qué costo o qué margen es bueno, y un color se leería como su criterio.
  */
 export function Variacion({
   delta,
   mejorSiBaja = false,
   escribir = (n) => `${n.toFixed(1)} pts`,
   contra,
+  neutra = false,
 }: {
   delta: number | null;
   mejorSiBaja?: boolean;
   escribir?: (n: number) => string;
   contra: string;
+  neutra?: boolean;
 }) {
   if (delta === null) return null;
   if (Math.abs(delta) < 0.1)
@@ -179,7 +184,7 @@ export function Variacion({
 
   const bien = mejorSiBaja ? delta < 0 : delta > 0;
   return (
-    <span style={{ color: bien ? "#15803d" : "#b91c1c" }}>
+    <span style={{ color: neutra ? "var(--color-piedra)" : bien ? "#15803d" : "#b91c1c" }}>
       {delta > 0 ? "▲" : "▼"} {escribir(Math.abs(delta))} vs {contra}
     </span>
   );

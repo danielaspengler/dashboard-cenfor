@@ -7,12 +7,15 @@
 > archivo (estado). El detalle rico de todo lo construido antes del arnés está en
 > `../../memory.md` y `../HANDOFF.md`.
 
-**Última actualización:** 2026-09-11
-**Feature activa:** C15 — Resumen administrativo. La cañería está hecha y verificada; **falta
-la pantalla**, con la receta completa en `specs/C15-resumen-administrativo/SPEC.md`.
+**Última actualización:** 2026-09-13
+**Feature activa:** C16 — corte metodológico en auditorías. **Receta escrita y aprobada para
+arrancar**, con tres preguntas abiertas (umbrales del semáforo, si entra el histórico de 110
+visitas, y si el corte es exactamente el 01/08/2026). Spec en
+`specs/C16-corte-metodologico-auditorias/`.
+**Recién cerrada:** C15 — Resumen administrativo, verificado por el revisor el 13/09.
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
-**Cerradas esta semana:** C14 (informe por local) y el acceso del cliente.
 **En producción:** https://dashboard-cenfor.vercel.app
+**Sin publicar:** C15 está en el disco, no en `main`. El deploy sale con el próximo push.
 
 ---
 
@@ -31,6 +34,32 @@ indicadores de delivery (julio y agosto 2026, tres canales) · 225 filas de moti
 de venta sobre 10 locales.
 
 ---
+
+## El Resumen administrativo está terminado (C15)
+
+`/administracion/resumen`, área nueva «Administración» en el menú. Un mes por vez, con filtro de
+local, los dos en la URL. Siete tarjetas, cuatro bloques de gráficos SVG de 13 meses y la tabla
+por local. Verificado el 13/09/2026 contra la base con el build de producción.
+
+- **Un solo período para toda la pantalla**, el mes elegido. El Looker mezcla dos —ventas y
+  órdenes de 2026, los porcentajes promediados sobre veinte meses— y por eso muestra 18,5% de
+  costos fijos cuando en 2026 están en 26%. La pantalla lo dice en una línea.
+- **Los porcentajes se ponderan por ventas**, como el resto del tablero. Nueva Córdoba factura
+  diez veces más que Poeta Lugones y pesa diez veces más.
+- **Un 0 en un porcentaje es «sin dato»**, nunca 0%. Enero–mayo 2025 traen los montos vacíos.
+- **Sin costos fijos o variables, la fila no aporta rentabilidad ni variación.** Poeta Lugones
+  julio 2026 declara 93,57% con los variables en 0 y $1,5 M de fijos contra $7,1 M en agosto: esa
+  sola fila subía julio de 3,44% a 14,19% y le ponía a agosto un ▲27,9 pts de costos fijos que no
+  existió. El número real del grupo es ▲0,1 pts sobre los mismos 5 locales.
+- **Cada tarjeta dice sobre cuántos locales está calculada** y la variación compara solo los que
+  tienen el dato en los dos meses. En agosto faltan las órdenes de General Paz y Poeta Lugones:
+  contra los seis de julio caían 31%, sobre los mismos cuatro suben 0,2%.
+- **Nada de semáforos.** CENFOR no definió qué rentabilidad es buena.
+
+Falta que el cliente explique **qué mide «Compras/ventas»** y **cómo se compone la rentabilidad**
+(los costos variables ya incluyen el CMV). Y avisarle que **agosto 2026 no tiene las órdenes de
+General Paz ni de Poeta Lugones**, y que **julio de Poeta Lugones tiene la carga de costos a
+medias**.
 
 ## Delivery, cerrado para los tres canales
 
@@ -166,11 +195,21 @@ Formaggio no tiene datos económicos.
   pondera por ventas.
 - «Recta Martinolli» es «Recta»: la equivalencia vive en `locations.looker_label`.
 
-**Falta la pantalla**, y antes una decisión: el Looker **mezcla períodos** —sus tarjetas de
-ventas y órdenes son de 2026, las cuatro de porcentaje son promedios de los 20 meses— y
-promedia los porcentajes entre locales sin ponderar. Copiarlo tal cual reproduce esa mezcla;
-usar el criterio del resto del tablero da números distintos de los que el cliente ya vio.
-Todo relevado en `specs/C15-resumen-administrativo/SPEC.md`.
+**La pantalla ya está escrita** (`/administracion/resumen`, 11/09/2026), a la espera del
+revisor. Criterio decidido por Daniela: un solo mes, porcentajes de la planilla ponderados por
+ventas, y una regla de «sin dato» por indicador en `tieneDato()` (`economico.ts`) que usan
+tarjetas, variación, gráficos y tabla:
+
+- **Un 0 en un porcentaje es sin dato.** Enero–mayo 2025 traen los porcentajes en 0.
+- **El ticket solo toma filas con órdenes.** El `totalizar()` viejo daba $40.970 en agosto; da $27.827.
+- **Sin costos fijos o variables, la rentabilidad de la fila es sin dato.** Saca el 93,57% de
+  Poeta Lugones julio 2026: julio da 3,44% y 2026, 3,86%.
+- **La variación compara solo locales con el dato en los dos meses.** Órdenes de agosto: ▲ 0,2%
+  sobre los mismos 4 locales, no −31%.
+
+Se prueba con `npx tsx scripts/probar-economico.ts` (filas fijas + base viva, sale con 1 si un
+número no da). La pantalla aclara que no coincide con el Looker, que promedia sin ponderar y
+mezcla períodos.
 
 ## El informe por local ya se descarga (C14)
 
@@ -284,6 +323,13 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
 - **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
   es aceptable. Sin eso la pantalla muestra los números sin semáforo.
 - placeId de Censurado Luuma · umbral de las auditorías · qué mails van en `emails_autorizados`.
+
+**Para avisar al cliente (datos económicos, C15):**
+- Agosto 2026: General Paz y Poeta Lugones sin órdenes cargadas.
+- Poeta Lugones julio 2026: costos variables, CMV y compras vacíos.
+- Nueva Córdoba octubre y noviembre 2025: ticket promedio en 0 con las órdenes cargadas.
+- Enero–mayo 2025: sin costos ni rentabilidad (salvo Carlos Paz en mayo).
+- Sigue abierto con ellos qué mide Compras/ventas y cómo se compone la rentabilidad.
 
 **Tareas manuales:**
 - Publicar la app en Google si se quiere abrir al equipo (hoy está en modo Prueba: solo entran
