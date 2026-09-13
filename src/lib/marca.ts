@@ -53,10 +53,47 @@ export const NIVELES = [
   { desde: 0, nombre: "Deficiente", color: "#b91c1c", clase: "text-red-700" },
 ] as const;
 
-// Semáforo de las AUDITORÍAS presenciales. Son otros cortes y son cinco, no
-// cuatro: la planilla los define en su bloque «LECTURA DE LOS RESULTADOS»,
-// encontrado el 09/09/2026 al relevar para el informe por local. Hasta
-// entonces las auditorías se pintaban con los cortes de mystery shopper,
+// EL CORTE METODOLÓGICO DE LAS AUDITORÍAS
+//
+// En agosto de 2026 el cliente cambió la puntuación de su planilla de
+// auditoría para que sea más exigente. El mystery shopper no se tocó. Un
+// puntaje de antes y uno de después miden con varas distintas: ene 2025 –
+// jul 2026 promedia 89,4% en 110 visitas y agosto 2026 da 77,0% en 6.
+// Promediar los dos lados juntos inventa una caída de diez puntos que no pasó.
+//
+// **Todas las auditorías de agosto 2026 se hicieron con la planilla nueva y no
+// hubo período de transición** (Daniela, 13/09/2026). Por eso la fecha alcanza
+// para saber con qué vara se midió cada una, sin una columna nueva en `audits`
+// ni una migración.
+//
+// Si el corte se mueve, se cambia esta línea y nada más: los avisos de las
+// pantallas escriben el mes desde acá, no a mano.
+export const CORTE_AUDITORIAS = "2026-08-01";
+
+/** El mes del corte, para el gráfico y para los avisos de las pantallas. */
+export const MES_CORTE = CORTE_AUDITORIAS.slice(0, 7);
+
+export type EscalaAuditoria = "anterior" | "nueva" | "desconocida";
+
+/**
+ * Con qué planilla se midió una auditoría.
+ *
+ * Compara strings ISO, como el resto del proyecto: sin `Date` y sin husos
+ * horarios. Una fecha vacía o ilegible devuelve "desconocida" y NO cae en un
+ * lado por defecto: una auditoría sin escala no puede entrar a un promedio que
+ * declara con qué vara se midió.
+ */
+export function escalaAuditoria(fecha: string | null | undefined): EscalaAuditoria {
+  if (!fecha || !/^\d{4}-\d{2}-\d{2}/.test(fecha)) return "desconocida";
+  return fecha.slice(0, 10) >= CORTE_AUDITORIAS ? "nueva" : "anterior";
+}
+
+export type NivelAuditoria = { desde: number; nombre: string; color: string };
+
+// Semáforo de las AUDITORÍAS presenciales hasta el corte. Son otros cortes y
+// son cinco, no cuatro: la planilla los define en su bloque «LECTURA DE LOS
+// RESULTADOS», encontrado el 09/09/2026 al relevar para el informe por local.
+// Hasta entonces las auditorías se pintaban con los cortes de mystery shopper,
 // que son del formulario y no de la auditoría.
 export const NIVELES_AUDITORIA = [
   { desde: 95, nombre: "Se cumple totalmente", color: "#15803d" },
@@ -66,12 +103,46 @@ export const NIVELES_AUDITORIA = [
   { desde: 0, nombre: "No se cumple", color: "#b91c1c" },
 ] as const;
 
-export function nivelAuditoria(porcentaje: number | null | undefined) {
+// Semáforo de la planilla NUEVA, la que rige desde el corte. Un solo corte,
+// 85: cumple o no cumple. Lo fija Daniela como criterio de HOLT para el
+// tablero (13/09/2026) y por eso la pantalla lo afirma en vez de mostrarlo
+// como provisorio. Son dos niveles y no los cinco de la planilla anterior.
+export const NIVELES_AUDITORIA_NUEVA: readonly NivelAuditoria[] = [
+  { desde: 85, nombre: "Cumple", color: "#15803d" },
+  { desde: 0, nombre: "No cumple", color: "#b91c1c" },
+];
+
+/**
+ * El nivel de un puntaje leído con una planilla dada.
+ *
+ * Existe aparte de `nivelAuditoria()` para el único caso en que el valor es un
+ * PROMEDIO y no tiene una sola fecha: la tarjeta de auditorías del Resumen.
+ */
+export function nivelPorPlanilla(
+  porcentaje: number | null | undefined,
+  planilla: "anterior" | "nueva",
+): NivelAuditoria | null {
   if (porcentaje === null || porcentaje === undefined) return null;
-  return (
-    NIVELES_AUDITORIA.find((n) => porcentaje >= n.desde) ??
-    NIVELES_AUDITORIA[NIVELES_AUDITORIA.length - 1]
-  );
+  const niveles: readonly NivelAuditoria[] =
+    planilla === "nueva" ? NIVELES_AUDITORIA_NUEVA : NIVELES_AUDITORIA;
+  return niveles.find((n) => porcentaje >= n.desde) ?? niveles[niveles.length - 1];
+}
+
+/**
+ * El nivel de una auditoría, con los cortes de SU planilla.
+ *
+ * `fecha` decide la escala. Sin `fecha` se lee con la planilla anterior, que
+ * es lo que hacían todos los llamados de antes del corte. Una fecha presente
+ * pero ilegible es escala desconocida y no tiene nivel: el puntaje se muestra
+ * sin color, en vez de pintarse con una vara que no le corresponde.
+ */
+export function nivelAuditoria(
+  porcentaje: number | null | undefined,
+  fecha?: string | null,
+): NivelAuditoria | null {
+  const escala = fecha === undefined ? "anterior" : escalaAuditoria(fecha);
+  if (escala === "desconocida") return null;
+  return nivelPorPlanilla(porcentaje, escala);
 }
 
 export function nivelDe(porcentaje: number | null | undefined) {

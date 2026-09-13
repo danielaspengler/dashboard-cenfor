@@ -272,12 +272,106 @@ function Punto({
   );
 }
 
+/** Dos formas de medir la misma serie, separadas por un mes. */
+export type CorteSerie = {
+  /** El mes desde el que rige la vara nueva, "YYYY-MM". */
+  mes: string;
+  /** Qué dice la etiqueta de cada lado de la línea. */
+  antes: string;
+  desde: string;
+};
+
+/**
+ * La frontera entre dos formas de medir la misma serie.
+ *
+ * Cae en el BORDE IZQUIERDO de la columna del mes del corte, no sobre su
+ * punto: el cambio pasó entre dos meses, no dentro de uno.
+ *
+ * Con meses de un solo lado no se dibuja nada: no hay frontera que marcar. Y
+ * la etiqueta de un tramo de un solo mes se omite, porque no entra en el ancho
+ * de una columna y se pisaría con la otra. La línea punteada ya marca el corte.
+ */
+function MarcaCorte({
+  marco,
+  meses,
+  corte,
+}: {
+  marco: Marco;
+  meses: string[];
+  corte: CorteSerie;
+}) {
+  const i = meses.indexOf(corte.mes);
+  if (i <= 0) return null;
+  const x = marco.izq + anchoColumna(marco) * i;
+  return (
+    <g>
+      <line
+        x1={x}
+        x2={x}
+        y1={ARRIBA - 14}
+        y2={ARRIBA + alturaUtil(marco)}
+        strokeDasharray="3 3"
+        className="stroke-[var(--color-grafito)]"
+      />
+      {i > 1 && (
+        <text x={x - 4} y={ARRIBA - 5} textAnchor="end" fontSize={9} className="fill-[var(--color-piedra)]">
+          {corte.antes}
+        </text>
+      )}
+      {meses.length - i > 1 && (
+        <text x={x + 4} y={ARRIBA - 5} textAnchor="start" fontSize={9} className="fill-[var(--color-piedra)]">
+          {corte.desde}
+        </text>
+      )}
+    </g>
+  );
+}
+
+/**
+ * La línea de la serie: entera, o partida en dos por el corte.
+ *
+ * El tramo desde el corte va punteado, y el segmento que une los dos tramos
+ * también: es el que cruza de una vara a la otra.
+ */
+function Linea({
+  valores,
+  iCorte,
+  x,
+  y,
+}: {
+  valores: (number | null)[];
+  iCorte: number;
+  x: (i: number) => number;
+  y: (v: number) => number;
+}) {
+  const clase = "stroke-[var(--color-tinta)]";
+  if (iCorte <= 0)
+    return <path d={tramos(valores, x, y)} fill="none" strokeWidth={2} className={clase} />;
+  const parte = (dentro: (i: number) => boolean) =>
+    valores.map((v, i) => (dentro(i) ? v : null));
+  return (
+    <>
+      <path d={tramos(parte((i) => i < iCorte), x, y)} fill="none" strokeWidth={2} className={clase} />
+      <path
+        d={tramos(parte((i) => i >= iCorte - 1), x, y)}
+        fill="none"
+        strokeWidth={2}
+        strokeDasharray="4 3"
+        className={clase}
+      />
+    </>
+  );
+}
+
 /**
  * Una línea con puntos por mes.
  *
  * `dominio` fija la escala: los gráficos chicos de rentabilidad por local la
  * comparten para poder compararse. Si la escala baja de cero, la línea del
  * cero va marcada.
+ *
+ * `corte` marca un cambio de vara a mitad de la serie. Sin él, el gráfico se
+ * dibuja exactamente como antes.
  */
 export function GraficoLinea({
   titulo,
@@ -286,6 +380,7 @@ export function GraficoLinea({
   formato,
   marcado,
   dominio,
+  corte,
   alto = 160,
   chico = false,
 }: {
@@ -295,6 +390,7 @@ export function GraficoLinea({
   formato: (v: number) => string;
   marcado: string;
   dominio?: [number, number];
+  corte?: CorteSerie;
   alto?: number;
   chico?: boolean;
 }) {
@@ -311,7 +407,8 @@ export function GraficoLinea({
       {min < 0 && (
         <line x1={marco.izq} x2={marco.ancho - DER} y1={y(0)} y2={y(0)} strokeWidth={1.5} className="stroke-[var(--color-grafito)]" />
       )}
-      <path d={tramos(valores, x, y)} fill="none" strokeWidth={2} className="stroke-[var(--color-tinta)]" />
+      <Linea valores={valores} iCorte={corte ? meses.indexOf(corte.mes) : -1} x={x} y={y} />
+      {corte && <MarcaCorte marco={marco} meses={meses} corte={corte} />}
       {valores.map((v, i) => (
         <Punto
           key={i}

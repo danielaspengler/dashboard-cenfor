@@ -1,4 +1,4 @@
-import { nivelAuditoria, nivelDe } from "@/lib/marca";
+import { nivelAuditoria, nivelDe, nivelPorPlanilla } from "@/lib/marca";
 
 export function PageHeader({
   titulo,
@@ -70,18 +70,39 @@ export function SinDato({ children = "Sin datos" }: { children?: React.ReactNode
  * salen de la planilla del cliente: mystery shopper clasifica en cuatro
  * niveles (90/75/60) y la auditoría en cinco (95/90/70/50). Pintar una
  * auditoría con los cortes de la otra es inventar un criterio.
+ *
+ * `fecha` dice con qué planilla leer una auditoría: desde agosto de 2026 los
+ * cortes de auditoría son otros (`CORTE_AUDITORIAS`, en `marca.ts`).
+ * `planilla` es para el único caso en que el valor es un promedio y no tiene
+ * una sola fecha: la tarjeta de auditorías del Resumen. Cuando viene, gana.
+ *
+ * **Un valor sin semáforo se muestra igual**, en el color de texto normal. No
+ * tener nivel y no tener puntaje son dos cosas distintas: una auditoría sin
+ * fecha legible no tiene escala, pero su puntaje se midió y se ve.
  */
 export function Puntaje({
   pct,
   escala = "mystery",
+  fecha,
+  planilla,
 }: {
   pct: number | null | undefined;
   escala?: "mystery" | "auditoria";
+  fecha?: string | null;
+  planilla?: "anterior" | "nueva";
 }) {
-  const nivel = escala === "auditoria" ? nivelAuditoria(pct) : nivelDe(pct);
-  if (pct === null || pct === undefined || !nivel) return <SinDato>—</SinDato>;
+  if (pct === null || pct === undefined) return <SinDato>—</SinDato>;
+  const nivel =
+    escala !== "auditoria"
+      ? nivelDe(pct)
+      : planilla
+        ? nivelPorPlanilla(pct, planilla)
+        : nivelAuditoria(pct, fecha);
   return (
-    <span className="font-semibold tabular-nums" style={{ color: nivel.color }}>
+    <span
+      className="font-semibold tabular-nums"
+      style={nivel ? { color: nivel.color } : undefined}
+    >
       {pct.toFixed(1)}%
     </span>
   );

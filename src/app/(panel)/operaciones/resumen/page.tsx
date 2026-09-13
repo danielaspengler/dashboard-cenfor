@@ -6,7 +6,8 @@ import {
   getAuditorias,
   promedioValido,
 } from "@/lib/data";
-import { MARCA } from "@/lib/marca";
+import { MARCA, MES_CORTE, escalaAuditoria } from "@/lib/marca";
+import { promedioAuditorias, type PromedioAuditorias } from "@/lib/auditorias";
 import {
   MES_TODO,
   type Busqueda,
@@ -20,6 +21,58 @@ import { FiltroMarca, FiltroMeses } from "@/components/filtros";
 import { Card, Dato, PageHeader, Puntaje, SinDato, Tabla, Td, Th, fechaCorta } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * La tarjeta de auditorías de una marca.
+ *
+ * Con auditorías de los dos lados del corte NO hay un número único: se muestran
+ * los dos promedios, el nuevo arriba. No es una convención que haya que
+ * recordar, es lo único que compila: el caso mixto de `promedioAuditorias()` no
+ * trae un campo `valor`.
+ */
+function TarjetaAuditorias({
+  promedio,
+  auditaAlguno,
+}: {
+  promedio: PromedioAuditorias;
+  auditaAlguno: boolean;
+}) {
+  if (promedio.tipo === "sin_dato") {
+    return (
+      <Dato
+        etiqueta="Auditorías"
+        valor={<SinDato>—</SinDato>}
+        detalle={auditaAlguno ? "sin auditorías" : "no aplica"}
+      />
+    );
+  }
+  if (promedio.tipo === "unico") {
+    return (
+      <Dato
+        etiqueta="Auditorías"
+        valor={<Puntaje pct={promedio.valor} escala="auditoria" planilla={promedio.escala} />}
+        detalle={`${promedio.visitas} realizadas · planilla ${promedio.escala}`}
+      />
+    );
+  }
+  return (
+    <Dato
+      etiqueta="Auditorías"
+      valor={
+        <span className="block">
+          <Puntaje pct={promedio.nueva.valor} escala="auditoria" planilla="nueva" />
+          <span className="block text-sm font-normal text-[var(--color-piedra)]">
+            {promedio.anterior.valor === null
+              ? "sin dato"
+              : `${promedio.anterior.valor.toFixed(1)}%`}{" "}
+            con la planilla anterior
+          </span>
+        </span>
+      }
+      detalle={`${promedio.nueva.visitas} con la planilla nueva · ${promedio.anterior.visitas} con la anterior. Promedios separados.`}
+    />
+  );
+}
 
 export default async function ResumenPage({
   searchParams,
@@ -61,6 +114,13 @@ export default async function ResumenPage({
   );
   const localesVisibles = locales.filter((l) => idsVisibles.has(l.id));
 
+  // El pie de la tabla avisa del corte solo cuando lo que está a la vista cae
+  // de los dos lados: con un mes elegido nunca pasa, con "Todo" sí.
+  const hayMixtura =
+    promedioAuditorias(
+      auditoriasDelMes.filter((a) => a.location_id && idsVisibles.has(a.location_id)),
+    ).tipo === "mixto";
+
   const porMarca = marcasVisibles.map((marca) => {
     const suyos = locales.filter((l) => l.brand_id === marca.id);
     const ids = new Set(suyos.map((l) => l.id));
@@ -88,10 +148,9 @@ export default async function ResumenPage({
       msPromedio: promedioValido(visitasMarca),
       msCantidad: visitasMarca.length,
       msEnRevision: visitasMarca.filter((v) => v.needs_review).length,
-      auditoriaPromedio: auditoriasMarca.length
-        ? auditoriasMarca.reduce((a, x) => a + (x.score_pct ?? 0), 0) / auditoriasMarca.length
-        : null,
-      auditoriaCantidad: auditoriasMarca.length,
+      // El único lugar del tablero donde un promedio de auditorías podía cruzar
+      // el corte: el filtro por defecto es "Todo".
+      auditorias: promedioAuditorias(auditoriasMarca),
       // Formaggio no audita: sin auditorías y sin pestaña, es "no aplica".
       // Con pestaña pero sin auditorías en el período, es "sin auditorías".
       auditaAlguno: suyos.some((l) => l.audit_sheet_label),
@@ -155,17 +214,7 @@ export default async function ResumenPage({
                         : "sin visitas"
                     }
                   />
-                  <Dato
-                    etiqueta="Auditorías"
-                    valor={<Puntaje pct={m.auditoriaPromedio} />}
-                    detalle={
-                      m.auditoriaCantidad
-                        ? `${m.auditoriaCantidad} realizadas`
-                        : m.auditaAlguno
-                          ? "sin auditorías"
-                          : "no aplica"
-                    }
-                  />
+                  <TarjetaAuditorias promedio={m.auditorias} auditaAlguno={m.auditaAlguno} />
                 </div>
               </Card>
             );
@@ -222,9 +271,16 @@ export default async function ResumenPage({
                     <Td className="text-right">
                       {ultima ? (
                         <span>
-                          <Puntaje pct={ultima.score_pct} />
+                          <Puntaje
+                            pct={ultima.score_pct}
+                            escala="auditoria"
+                            fecha={ultima.audit_date}
+                          />
                           <span className="ml-2 text-xs text-[var(--color-piedra)]">
                             {fechaCorta(ultima.audit_date)}
+                            {escalaAuditoria(ultima.audit_date) === "nueva"
+                              ? " · planilla nueva"
+                              : ""}
                           </span>
                         </span>
                       ) : (
@@ -239,6 +295,14 @@ export default async function ResumenPage({
           <p className="mt-2 text-xs text-[var(--color-piedra)]">
             Formaggio no tiene auditorías presenciales. Un local sin ficha de Google no tiene
             reseñas cargadas — no es un cero.
+            {hayMixtura && (
+              <>
+                {" "}
+                Las auditorías desde{" "}
+                <strong className="font-medium">{etiquetaMes(MES_CORTE).toLowerCase()}</strong> se
+                midieron con una planilla más exigente.
+              </>
+            )}
             {mes !== MES_TODO && (
               <>
                 {" "}

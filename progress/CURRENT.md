@@ -8,14 +8,12 @@
 > `../../memory.md` y `../HANDOFF.md`.
 
 **Última actualización:** 2026-09-13
-**Feature activa:** C16 — corte metodológico en auditorías. **Receta escrita y aprobada para
-arrancar**, con tres preguntas abiertas (umbrales del semáforo, si entra el histórico de 110
-visitas, y si el corte es exactamente el 01/08/2026). Spec en
-`specs/C16-corte-metodologico-auditorias/`.
-**Recién cerrada:** C15 — Resumen administrativo, verificado por el revisor el 13/09.
+**Feature activa:** ninguna. C15 y C16 quedaron cerradas y publicadas el 13/09/2026.
+**Lo primero que conviene abrir:** cargar el histórico de 110 auditorías, que hoy vive solo en la
+planilla del Looker. Hasta que entre, el corte de C16 es un guardarraíl que no se ve funcionando:
+las 6 filas de `audits` son todas de agosto 2026 y ningún promedio cruza nada.
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
 **En producción:** https://dashboard-cenfor.vercel.app
-**Sin publicar:** C15 está en el disco, no en `main`. El deploy sale con el próximo push.
 
 ---
 
@@ -25,7 +23,7 @@ visitas, y si el corte es exactamente el 01/08/2026). Spec en
 |---|---|
 | Reseñas de Google | funcionando, con datos reales |
 | Mystery Shopper | funcionando · ahora también lista las visitas de delivery del formulario |
-| Auditorías presenciales | funcionando (el dashboard es el archivo histórico que la planilla no tiene) |
+| Auditorías presenciales | funcionando (el dashboard es el archivo histórico que la planilla no tiene) · con el corte de planilla de agosto 2026 declarado (C16) |
 | Delivery | **terminado**: Rappi, PedidosYa y Uber |
 | Plan de acción | lugar reservado en el menú, sin definir con el cliente |
 
@@ -34,6 +32,30 @@ indicadores de delivery (julio y agosto 2026, tres canales) · 225 filas de moti
 de venta sobre 10 locales.
 
 ---
+
+## Las auditorías cambiaron de vara en agosto 2026 (C16)
+
+En agosto de 2026 el cliente hizo más exigente la puntuación de su planilla de auditoría. El
+mystery shopper no se tocó. Un puntaje de antes y uno de después no se comparan: el tramo
+ene 2025 – jul 2026 promedia 89,4% en 110 visitas y agosto 2026 da 77,0% en 6.
+
+- **La fecha del corte vive en una sola línea**, `CORTE_AUDITORIAS` en `marca.ts`. El mes de los
+  cinco avisos de pantalla sale de ahí: si el corte se mueve, no hay textos que cazar.
+- **La escala se deduce de la fecha**, sin columna nueva ni migración. Daniela confirmó que todas
+  las auditorías de agosto usan la planilla nueva y que no hubo período de transición.
+- **Un promedio no puede cruzar el corte por descuido.** `promedioAuditorias()` devuelve
+  `mixto` sin ningún campo `valor` cuando el conjunto cae de los dos lados: una pantalla que
+  quiera imprimir un número único ahí no compila. La regla no depende de que alguien se acuerde.
+- **La planilla nueva se lee con un solo corte: 85.** Cumple o no cumple. Lo fijó Daniela como
+  criterio de HOLT para el tablero, así que la pantalla lo afirma en vez de mostrarlo como
+  provisorio. Las auditorías anteriores conservan los cinco cortes de su propia planilla
+  (95/90/70/50). Con los 6 puntajes de agosto cumplen Carlos Paz (86,04) y Luuma (85,46).
+- **El score no cambió.** La auditoría se midió y entra con su peso de 30: sacarla redistribuiría
+  puntos por una razón metodológica. Lo único nuevo es que el eje dice con qué planilla se midió.
+- **Hoy el corte no se puede ver funcionando en pantalla.** `audits` tiene 6 filas y todas son de
+  agosto 2026, así que ningún promedio cruza nada y la serie tiene un solo mes («sin dato»). Es un
+  guardarraíl para el día que entre el histórico. El caso mixto se prueba con
+  `npx tsx scripts/probar-auditorias.ts`, con filas fijas.
 
 ## El Resumen administrativo está terminado (C15)
 
@@ -322,7 +344,14 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
   contra un porcentaje— aunque la columna se llame igual en las dos planillas.
 - **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
   es aceptable. Sin eso la pantalla muestra los números sin semáforo.
-- placeId de Censurado Luuma · umbral de las auditorías · qué mails van en `emails_autorizados`.
+- placeId de Censurado Luuma · qué mails van en `emails_autorizados`.
+
+**Feature aparte, ya decidida:**
+- **Cargar el histórico de auditorías anteriores a agosto 2026.** Daniela confirmó el 13/09/2026
+  que se va a cargar, pero fuera de C16. Son las 110 visitas de ene 2025 – jul 2026 que hoy viven
+  en la planilla del Looker (`Agrupado Looker - Censurado.xlsx`, hoja `Puntaje auditorias`), que
+  no es la que lee el sync: entra como fuente nueva. Hasta que estén, el corte de C16 no se ve
+  funcionando en ninguna pantalla.
 
 **Para avisar al cliente (datos económicos, C15):**
 - Agosto 2026: General Paz y Poeta Lugones sin órdenes cargadas.
@@ -398,6 +427,11 @@ que corre el mismo código contra las planillas vivas sin escribir.
   columnas nuevas en null, sin un error a la vista. La corrida siguiente, un minuto después,
   las guardó bien. Después de un `alter table`, esperar y verificar el contenido, no el
   «ok» del sync.
+
+- **`scripts/probar-score.ts` falla a veces con «defs: JWT issued at future».** Es el reloj de la
+  máquina adelantado contra Supabase, no el código: la misma corrida, repetida sin tocar nada,
+  pasa. Cae en una consulta cualquiera de las ocho y el script muere ahí, así que parece un error
+  de datos. Si aparece, repetir antes de investigar.
 
 - **Turbopack no anda en esta máquina; webpack sí.** `npm run dev` ya lleva `--webpack`. Si las
   pantallas dan 500 y `/api/sync` responde 200, esa es la firma: panic de Turbopack al compilar

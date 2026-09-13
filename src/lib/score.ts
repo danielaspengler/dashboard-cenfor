@@ -1,4 +1,4 @@
-import { PESOS_SCORE, type EjeScore } from "@/lib/marca";
+import { PESOS_SCORE, escalaAuditoria, type EjeScore } from "@/lib/marca";
 import type { AuditoriaFila, SnapshotFila, VisitaFila } from "@/lib/data";
 import {
   delMes,
@@ -89,6 +89,18 @@ function etiquetaCanal(canal: string, tiendas: number): string {
 
 /** Una calificación de 1 a 5 llevada a escala 100. */
 const aEscala100 = (estrellas: number) => (estrellas / 5) * 100;
+
+/**
+ * Con qué planilla se midió una auditoría, para decirlo en el detalle del eje.
+ *
+ * El score NO cambia por el corte: la auditoría se midió y entra con el peso
+ * que le toca. Lo que cambia es que el informe ahora puede decir con qué vara,
+ * que es lo que hace falta para no comparar dos meses de distinto lado.
+ */
+function planillaDe(fecha: string): string {
+  const escala = escalaAuditoria(fecha);
+  return escala === "desconocida" ? "planilla sin dato" : `planilla ${escala}`;
+}
 
 /** Los minutos cerrado de un mes, como porcentaje de ese mes. */
 function pctDelMes(minutos: number, mes: string): number {
@@ -209,7 +221,9 @@ export function calcularScore(d: DatosScore): Score {
   arma(
     "auditoria",
     auditoria?.score_pct ?? null,
-    auditoria ? `auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}` : "sin auditoría este mes",
+    auditoria
+      ? `auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)} · ${planillaDe(auditoria.audit_date)}`
+      : "sin auditoría este mes",
   );
 
   // ── Los puntos de venta propios del local ──────────────────────────────

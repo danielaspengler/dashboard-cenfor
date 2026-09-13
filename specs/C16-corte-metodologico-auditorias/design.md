@@ -87,30 +87,30 @@ Un valor por mes con auditorías, del más viejo al más nuevo, promediando **de
 nunca cruza el corte, porque el corte cae en un límite de mes—. Los meses sin auditorías entre dos
 con auditorías quedan como `null`, que `GraficoLinea` ya dibuja como hueco y no como cero.
 
-## Umbrales (P1) — el cambio de una línea
+## Umbrales (P1 resuelta) — un solo corte, 85
 
 ```
 NIVELES_AUDITORIA        // los cinco cortes de la planilla anterior. No se tocan.
-NIVELES_AUDITORIA_NUEVA: readonly Nivel[] | null = null   // a confirmar con el cliente
+NIVELES_AUDITORIA_NUEVA  // un solo corte: ≥85 cumple, debajo no cumple.
 ```
 
-`nivelAuditoria(pct, fecha)` elige la lista según la escala de la fecha. Con
-`NIVELES_AUDITORIA_NUEVA` en `null`, una auditoría de la escala nueva **no tiene nivel**: se
-muestra el número sin color y sin clasificación (la opción provisoria de `requirements.md` → P1).
+`nivelAuditoria(pct, fecha)` elige la lista según la escala de la fecha. La escala nueva tiene dos
+niveles y no cinco: el corte de 85 lo fija Daniela como criterio de HOLT para el tablero
+(13/09/2026), no la planilla del cliente. La pantalla lo muestra como el umbral que es, sin
+leyendas de «a confirmar».
 
-Cuando el cliente conteste, el cambio es darle valor a esa constante. Una línea, en el mismo
-archivo, y se propaga a la tabla de MS y Auditorías, al Resumen y al informe sin tocarlos. Si la
-respuesta es «los cortes son los mismos», la línea es
-`NIVELES_AUDITORIA_NUEVA = NIVELES_AUDITORIA`.
+`NIVELES_AUDITORIA` no se toca: las auditorías anteriores al corte se siguen leyendo con los cinco
+niveles de su propia planilla.
 
-**`Puntaje` tiene que separar dos cosas que hoy son la misma.** Hoy hace
+**`Puntaje` igual separa dos cosas que hoy son la misma.** Hoy hace
 `if (pct === null || !nivel) return <SinDato>—</SinDato>`: sin nivel, no muestra el número. Pasa a
-mostrar el número siempre que exista, y a pintarlo solo si hay nivel. Sin ese cambio, la opción
-provisoria escondería puntajes que el cliente sí midió.
+mostrar el número siempre que exista, y a pintarlo solo si hay nivel. El caso que lo necesita es la
+escala **desconocida** (CA-4): una auditoría sin fecha legible no tiene semáforo, pero su puntaje
+se midió y se muestra.
 
-En el informe, `nivelAuditoria(...)?.nombre` queda vacío para la escala nueva: el bloque muestra el
-puntaje sin la clasificación al lado, en vez de un hueco. Las barras por dimensión caen en el color
-de marca, que ya es su fallback actual.
+`Puntaje` recibe además `planilla?: "anterior" | "nueva"`, para el único caso en que el valor es un
+promedio y no tiene una sola fecha: la tarjeta de auditorías del Resumen. Cuando viene, gana sobre
+`fecha`.
 
 ## La marca del corte en el gráfico (`graficos.tsx`)
 
@@ -154,10 +154,10 @@ Referencia visual: `HOLT/CENFOR/Presentacion-Camara/graficos.js`, función `cali
    conjunto visible tiene auditorías de los dos lados, el detalle declara el reparto: «4 con la
    planilla nueva · 12 con la anterior». Cuando son todas del mismo lado, el detalle dice cuál.
 3. **Bajada de la sección «Auditorías presenciales»** (CA-14), después de lo que ya dice sobre el
-   histórico: «Desde {mes del corte} rige una planilla más exigente. Las auditorías anteriores y
-   las nuevas no se comparan entre sí.» Y, mientras P1 esté abierta, la línea de los cortes de
-   color se ajusta: «Los cortes de color son los de la planilla anterior. Para la planilla nueva
-   están a confirmar con el cliente.»
+   histórico: «Desde {mes del corte} rige una planilla más exigente: 85 o más cumple, debajo no
+   cumple. Las auditorías anteriores se leen con los cinco cortes de su planilla: 95 se cumple
+   totalmente · 90 mayoritariamente · 70 en buena parte · 50 en partes. Las dos escalas no se
+   comparan entre sí.»
 4. **Columna «Planilla»** en la tabla de auditorías, entre Auditor y Puntaje: «anterior» o «nueva».
    Es el dato que explica por qué dos filas de la misma tabla no se comparan, y es una palabra por
    fila. El `Puntaje` de cada fila recibe la fecha de la auditoría.
@@ -188,10 +188,10 @@ Referencia visual: `HOLT/CENFOR/Presentacion-Camara/graficos.js`, función `cali
 ### Informe por local (`informe/page.tsx`)
 
 En la bajada del bloque «Resumen de auditoría», cuando la auditoría del mes es de la escala nueva
-(CA-15): «Medida con la planilla vigente desde {mes del corte}, más exigente que la anterior. No se
-compara con informes anteriores a {mes del corte}.» Mientras P1 esté abierta, la enumeración de los
-cinco cortes de color se reemplaza por «los cortes de color de la planilla nueva están a confirmar
-con el cliente»; para una auditoría de la escala anterior, el texto de hoy no cambia.
+(CA-15): «Medida con la planilla vigente desde {mes del corte}, más exigente que la anterior: 85 o
+más cumple. No se compara con informes anteriores a {mes del corte}.» La enumeración de los cinco
+cortes de la planilla vieja se reemplaza por ese corte único; para una auditoría de la escala
+anterior, el texto de hoy no cambia.
 
 ### Score de calidad (`score.ts`)
 
@@ -219,9 +219,9 @@ eje Auditoría no es comparable, o no mostrarse. Es la línea que un cambio futu
   migración, a cambiar el sync y a rellenar las filas existentes, y el dato sería el mismo que la
   fecha ya dice. Si aparece un período de transición (P3), esta decisión se revisa: ahí la fecha
   deja de alcanzar.
-- **El semáforo de la escala nueva queda apagado mientras P1 esté abierta.** Mismo criterio que
-  Delivery, que muestra los números sin colores porque CENFOR no definió umbrales. Un semáforo
-  inventado se lee como criterio del cliente.
+- **El semáforo de la escala nueva tiene un solo corte, 85.** No es un semáforo inventado: lo fija
+  Daniela como criterio de HOLT para el tablero (P1, 13/09/2026). Por eso la pantalla lo afirma en
+  vez de disculparse. Los cinco niveles de la planilla vieja siguen valiendo para su tramo.
 - **La serie temporal no se recorta con el filtro de mes.** Una serie de un solo mes no es una
   serie. El filtro marca el mes elegido, que es lo que `GraficoLinea` ya sabe hacer.
 - **Una prop opcional en `GraficoLinea`, no un componente nuevo.** El Resumen administrativo no
@@ -268,17 +268,18 @@ eje Auditoría no es comparable, o no mostrarse. Es la línea que un cambio futu
 - **Hoy no hay con qué verlo funcionar.** Con 6 auditorías, todas de agosto 2026, ninguna pantalla
   muestra el caso mixto y la serie tiene un solo mes. Mitigación: la verificación de los números va
   con filas fijas en `scripts/probar-auditorias.ts` (T1) y el revisor cruza las pantallas contra
-  ese script, no contra la base. Es lo que abre P2.
+  ese script, no contra la base. P2 quedó resuelta: el histórico se va a cargar, pero como feature
+  aparte, así que este riesgo se mantiene hasta entonces y se declara, no se disfraza.
 - **Las dos etiquetas del gráfico se pisan si un tramo tiene pocos meses.** Con el histórico
   cargado son 19 meses contra 1: la etiqueta de la derecha no entra. Mitigación: cuando el tramo
   tiene un solo mes, esa etiqueta se omite y queda la línea punteada, que ya marca el corte.
 - **`Puntaje` cambia de comportamiento para todos sus usos.** Hoy un `pct` con nivel siempre lo
-  tiene; el cambio solo afecta al caso «hay valor, no hay nivel», que únicamente ocurre con la
-  escala nueva y P1 abierta. Mitigación: T5 verifica que mystery shopper y las auditorías del tramo
-  anterior se ven exactamente igual.
-- **P3 sin responder invalida el enfoque por fecha.** Si hubo locales auditados con la planilla
-  vieja ya entrado agosto, la fecha no alcanza y hace falta una marca por auditoría. Mitigación: se
-  pregunta antes de implementar; si la respuesta es «hubo transición», vuelve al líder.
+  tiene; el cambio solo afecta al caso «hay valor, no hay nivel», que únicamente ocurre con una
+  auditoría de escala desconocida. Mitigación: T5 verifica que mystery shopper y las auditorías del
+  tramo anterior se ven exactamente igual.
+- **P3 resuelta: no hubo período de transición.** Todas las auditorías de agosto 2026 usan la
+  planilla nueva, así que la fecha alcanza para deducir la escala y el enfoque por fecha queda
+  confirmado. El riesgo vuelve solo si el cliente cambia otra vez de planilla a mitad de mes.
 - **El cliente cambia de nuevo la planilla el año que viene.** El diseño soporta **un** corte. Dos
   cortes pedirían una lista de vigencias, y eso es una feature aparte. No se abstrae hoy por un
   problema que todavía no existe.

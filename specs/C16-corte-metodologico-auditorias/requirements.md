@@ -113,64 +113,73 @@ Cinco hallazgos que cambian el alcance respecto de lo que dice `SPEC.md`:
 ### Números que tienen que dar (los cruza el revisor)
 
 - **CA-24** — Con las filas fijas del tramo anterior y del tramo nuevo (`tasks.md` T1), el
-  promedio partido debe dar: tramo anterior **89,4%** en 110 visitas, tramo nuevo **76,9%** en 6
-  visitas, y el conjunto completo marcado como mixto, **sin** número único. Agosto 2026 por local:
-  General Paz 67,2 · Recta 72,6 · Nueva Córdoba 75,2 · Urca 75,6 · Luuma 85,0 · Carlos Paz 86,0.
-  Julio 2026: 86,4%.
+  promedio partido debe dar: tramo anterior **89,4%** en 110 visitas, tramo nuevo **77,0%** en 6
+  visitas, y el conjunto completo marcado como mixto, **sin** número único. Agosto 2026 por local,
+  verificado en la base el 13/09/2026: General Paz 67,17 · Recta 72,57 · Nueva Córdoba 75,23 ·
+  Urca 75,56 · Luuma 85,46 · Carlos Paz 86,04. Julio 2026: 86,4%.
+
+  > El tramo nuevo da **77,005**, no el 76,9 que decía `SPEC.md`. Esa cifra salía de la planilla
+  > del Looker, que tiene Luuma en 85,0; la base guarda 85,46. Manda la base, que es de donde lee
+  > el tablero.
+
 - **CA-25** — Con la base de hoy (6 auditorías, todas de agosto 2026), la pantalla debe mostrar un
   promedio único de la escala nueva, el aviso del corte, y la sección de evolución en «sin dato»
-  (CA-21). Ningún número de pantalla cambia respecto de hoy salvo los avisos y el semáforo (P1).
+  (CA-21). Los puntajes se pintan con el corte único de 85 (P1): cumplen Carlos Paz y Luuma, los
+  otros cuatro no. Ningún número de pantalla cambia respecto de hoy; cambian los avisos y los
+  colores del semáforo de auditoría.
 
-## Preguntas abiertas
+## Preguntas resueltas — respuestas de Daniela, 13/09/2026
 
-### P1 — Los umbrales del semáforo de auditoría (BLOQUEANTE de una parte)
+Las tres preguntas abiertas de la receta quedaron contestadas antes de implementar. Ninguna
+cambió el enfoque; P1 cambió los umbrales y desbloqueó T13.
 
-Los cinco cortes de `NIVELES_AUDITORIA` (≥95 se cumple totalmente · ≥90 mayoritariamente · ≥70 en
-buena parte · ≥50 en partes · resto no se cumple) vienen del bloque «LECTURA DE LOS RESULTADOS»
-de la planilla **anterior**. Con la planilla nueva ningún local llegó a 90 en agosto: el mejor es
-Carlos Paz con 86,0.
+### P1 — Los umbrales del semáforo de auditoría · RESUELTA
 
-**Hay que preguntárselo al cliente:** ¿la planilla nueva trae su propio bloque de lectura de
-resultados? Si lo trae, esos son los cortes. Si no lo trae, ¿con qué cortes quiere que se lea?
+**La escala nueva tiene UN SOLO corte: 85.** Cumple o no cumple: ≥85 cumple, debajo no cumple. No
+son cinco niveles. Lo fija **Daniela como criterio de HOLT para el tablero**, no la planilla del
+cliente, así que la pantalla **no** dice «a confirmar con el cliente»: es el umbral del tablero y
+se muestra como tal.
 
-**Qué pasa mientras no llegue la respuesta (propuesta para aprobar):** las auditorías de la escala
-nueva se muestran **sin color de semáforo y sin clasificación**, en el color de texto normal, con
-el número completo. Debajo de la tabla, una línea: «Los cortes de color son los de la planilla
-anterior. Para la planilla nueva están a confirmar con el cliente.» Las auditorías del tramo
-anterior siguen pintadas con los cinco cortes de siempre, que son los suyos.
+Las auditorías anteriores al corte conservan los cinco niveles de la planilla vieja (95 · 90 · 70
+· 50), que son los suyos y no se tocan.
 
-Por qué así y no de otra forma:
+Con el corte en 85 y las 6 auditorías de agosto 2026 de la base: **cumplen Carlos Paz (86,04) y
+Luuma (85,46)**; no cumplen Nueva Córdoba (75,23), General Paz (67,17), Urca (75,56) y Recta
+(72,57).
 
-- **Dejar los cortes viejos** pinta seis locales en «se cumple en buena parte» o peor, todos
-  amarillos y rojos, leídos como criterio de CENFOR cuando no lo es.
-- **Inventar cortes nuevos** (bajar todo diez puntos, por ejemplo) es exactamente lo que
-  `CALIDAD.md` prohíbe: un semáforo inventado se lee como criterio del cliente. Es la misma regla
-  que ya se aplicó en Delivery, que muestra los números sin semáforo porque el cliente no definió
-  umbrales.
-- **No mostrar el puntaje** esconde el dato que el cliente sí midió.
+Consecuencias sobre la receta original:
 
-**Cuando llegue la respuesta, el cambio es una línea**: darle valor a la constante de umbrales
-nuevos en `marca.ts` (hoy `null`). Ninguna pantalla se toca. Ver `design.md` → «Umbrales».
+- `NIVELES_AUDITORIA_NUEVA` **no** queda en `null`: arranca con los dos niveles de 85.
+- **T13 deja de estar bloqueada.** Entra con el resto de la feature.
+- Las dos leyendas provisorias («los cortes de color están a confirmar con el cliente») de T7 y
+  T10 **no se escriben**: el criterio existe desde el día uno.
+- El semáforo de la escala nueva **se dibuja**. La propuesta provisoria de mostrar esos puntajes
+  sin color quedó sin efecto.
 
-### P2 — ¿Se carga a la base el histórico de auditorías anteriores a agosto 2026?
+El cambio de `Puntaje` (separar «no hay valor» de «no hay semáforo», T5) **se mantiene** por otro
+motivo: una auditoría sin fecha legible es de escala desconocida (CA-4) y no tiene semáforo, pero
+su puntaje igual se muestra.
 
-Hoy `audits` tiene 6 filas, todas de agosto 2026. Las 110 visitas de ene 2025 – jul 2026 están en
-la planilla del Looker (`Agrupado Looker - Censurado.xlsx`, hoja `Puntaje auditorias`), que **no
-es** la planilla que lee el sync. Sin esas filas, el corte no se ve en ninguna pantalla: la serie
-temporal tiene un solo mes y ningún promedio cruza nada.
+### P2 — El histórico de auditorías anteriores a agosto 2026 · RESUELTA
 
-Esto **no bloquea** la implementación —la feature es el guardarraíl que evita el error el día que
-esas filas entren—, pero sí define qué puede verificar el revisor en el navegador (CA-25) y si
-vale la pena una octava fuente del sync. **No entra en el alcance de C16**: si Daniela quiere el
-histórico cargado, es una feature aparte.
+**Sí se va a cargar, pero es otra feature.** No entra en C16: no se implementa ni se diseña acá.
 
-### P3 — ¿El corte es el 1 de agosto de 2026 exacto?
+Hasta que esas filas entren, **C16 es un guardarraíl que no se puede ver funcionando en pantalla
+con datos de los dos lados del corte**. Con las 6 filas de hoy —todas de agosto 2026— ninguna
+pantalla muestra el caso mixto y la serie temporal tiene un solo mes. El caso mixto se verifica
+con las filas fijas de `scripts/probar-auditorias.ts` (T1), no con el navegador. El revisor lo
+dice así, no lo disfraza de verificado.
 
-Se asume que **todas** las auditorías con fecha desde el 01/08/2026 usan la planilla nueva y todas
-las anteriores la vieja. Si hubo un período de transición —algún local auditado con la planilla
-vieja ya entrado agosto, o alguno con la nueva en julio—, la fecha sola no alcanza y haría falta
-una marca por auditoría. Daniela lo confirma; si la respuesta es «hubo transición», vuelve al
-líder antes de implementar.
+Las 110 visitas de ene 2025 – jul 2026 siguen en la planilla del Looker (`Agrupado Looker -
+Censurado.xlsx`, hoja `Puntaje auditorias`), que no es la que lee el sync. Cargarlas es una
+fuente nueva del sync y va por separado.
+
+### P3 — El corte es el 1 de agosto de 2026 exacto · RESUELTA
+
+**Todas las auditorías de agosto 2026 se hicieron con la planilla nueva.** No hubo período de
+transición. El corte es el 01/08/2026 y **alcanza con la fecha**: no hace falta una marca por
+auditoría, ninguna columna nueva en `audits` y ninguna migración. El enfoque por fecha de
+`design.md` queda confirmado.
 
 ## Fuera de scope
 

@@ -1,7 +1,15 @@
-import { getAuditorias, getMarcasYLocales, getVisitas, promedioValido } from "@/lib/data";
-import { nivelDe } from "@/lib/marca";
-import { type Busqueda, enMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
+import {
+  getAuditorias,
+  getMarcasYLocales,
+  getVisitas,
+  promedioValido,
+  type AuditoriaFila,
+} from "@/lib/data";
+import { MES_CORTE, escalaAuditoria, nivelDe } from "@/lib/marca";
+import { serieAuditorias } from "@/lib/auditorias";
+import { type Busqueda, enMes, etiquetaMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
 import { FiltroMeses } from "@/components/filtros";
+import { GraficoLinea } from "@/components/graficos";
 import {
   Card,
   Dato,
@@ -16,6 +24,26 @@ import {
 } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
+
+/** El mes del corte escrito como lo lee una persona: "agosto 2026". */
+const MES_DEL_CORTE = etiquetaMes(MES_CORTE).toLowerCase();
+
+/**
+ * Con qué planilla se midieron las auditorías que la tarjeta cuenta.
+ *
+ * La tarjeta cuenta, no promedia, así que el corte no le rompe ningún número.
+ * Lo que hace falta es decir que las que cuenta no se comparan entre sí cuando
+ * vienen de los dos lados.
+ */
+function repartoPorPlanilla(auditorias: AuditoriaFila[]): string {
+  if (!auditorias.length) return "solo Censurado";
+  const nuevas = auditorias.filter((a) => escalaAuditoria(a.audit_date) === "nueva").length;
+  const anteriores = auditorias.filter((a) => escalaAuditoria(a.audit_date) === "anterior").length;
+  if (nuevas && anteriores) return `${nuevas} con la planilla nueva · ${anteriores} con la anterior`;
+  if (nuevas) return "todas con la planilla nueva";
+  if (anteriores) return "todas con la planilla anterior";
+  return "sin fecha legible";
+}
 
 export default async function MsAuditoriasPage({
   searchParams,
@@ -48,11 +76,15 @@ export default async function MsAuditoriasPage({
   const deliveryMS = visitas.filter((v) => v.experience_type === "delivery");
   const enRevision = visitas.filter((v) => v.needs_review).length;
 
+  // La serie sale de TODAS las auditorías, sin el filtro de mes: una serie de
+  // un solo mes no es una serie. El filtro marca el mes elegido, nada más.
+  const serie = serieAuditorias(todasLasAuditorias);
+
   return (
     <>
       <PageHeader
         titulo="Mystery Shopper y Auditorías"
-        bajada="Puntajes calculados por las planillas del cliente · mystery shopper ≥90 excelente, ≥75 bueno, ≥60 regular · auditoría ≥95, ≥90, ≥70, ≥50"
+        bajada={`Puntajes calculados por las planillas del cliente · mystery shopper ≥90 excelente, ≥75 bueno, ≥60 regular. Desde ${MES_DEL_CORTE} la planilla de auditoría puntúa más exigente: 85 o más cumple. Los puntajes anteriores no se comparan con los nuevos.`}
         extra={<FiltroMeses actual={mes} meses={meses} />}
       />
 
@@ -73,7 +105,11 @@ export default async function MsAuditoriasPage({
             />
           </Card>
           <Card>
-            <Dato etiqueta="Auditorías" valor={auditorias.length} detalle="solo Censurado" />
+            <Dato
+              etiqueta="Auditorías"
+              valor={auditorias.length}
+              detalle={repartoPorPlanilla(auditorias)}
+            />
           </Card>
           <Card>
             <Dato
@@ -150,9 +186,11 @@ export default async function MsAuditoriasPage({
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
             La planilla de origen guarda solo la última auditoría de cada local. Acá queda el
-            histórico completo: cada corrida se archiva aunque el cliente pise la pestaña. Los
-            cortes de color son los de la propia planilla: 95 se cumple totalmente · 90
-            mayoritariamente · 70 en buena parte · 50 en partes.
+            histórico completo: cada corrida se archiva aunque el cliente pise la pestaña. Desde{" "}
+            {MES_DEL_CORTE} rige una planilla más exigente: 85 o más cumple, debajo no cumple. Las
+            auditorías anteriores se leen con los cinco cortes de su propia planilla: 95 se cumple
+            totalmente · 90 mayoritariamente · 70 en buena parte · 50 en partes. Las dos escalas no
+            se comparan entre sí.
           </p>
           <Tabla>
             <thead>
@@ -160,25 +198,58 @@ export default async function MsAuditoriasPage({
                 <Th>Fecha</Th>
                 <Th>Local</Th>
                 <Th>Auditor</Th>
+                <Th>Planilla</Th>
                 <Th className="text-right">Puntaje</Th>
               </tr>
             </thead>
             <tbody>
               {auditorias.map((a) => {
                 const local = a.location_id ? localPorId.get(a.location_id) : null;
+                const planilla = escalaAuditoria(a.audit_date);
                 return (
                   <tr key={a.id} className="hover:bg-[var(--color-hueso)]">
                     <Td className="whitespace-nowrap tabular-nums">{fechaCorta(a.audit_date)}</Td>
                     <Td className="font-medium">{local?.name ?? <SinDato>—</SinDato>}</Td>
                     <Td className="text-[var(--color-piedra)]">{a.auditor ?? "—"}</Td>
+                    <Td className="text-xs uppercase text-[var(--color-piedra)]">
+                      {planilla === "desconocida" ? "sin dato" : planilla}
+                    </Td>
                     <Td className="text-right">
-                      <Puntaje pct={a.score_pct} escala="auditoria" />
+                      <Puntaje pct={a.score_pct} escala="auditoria" fecha={a.audit_date} />
                     </Td>
                   </tr>
                 );
               })}
             </tbody>
           </Tabla>
+        </section>
+
+        <section>
+          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+            Evolución del puntaje de auditoría
+          </h2>
+          <p className="mb-3 text-xs text-[var(--color-piedra)]">
+            Promedios mensuales de todas las auditorías cargadas. El filtro de fecha no recorta
+            esta serie.
+          </p>
+          <Card>
+            {serie.meses.length < 2 ? (
+              <SinDato>sin dato</SinDato>
+            ) : (
+              <GraficoLinea
+                titulo="Evolución del puntaje de auditoría"
+                meses={serie.meses}
+                valores={serie.valores}
+                formato={(v) => `${v.toFixed(1)}%`}
+                marcado={mes}
+                corte={{
+                  mes: MES_CORTE,
+                  antes: "medido con la planilla anterior",
+                  desde: "planilla nueva, más exigente",
+                }}
+              />
+            )}
+          </Card>
         </section>
       </div>
     </>

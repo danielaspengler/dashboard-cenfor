@@ -17,7 +17,7 @@ import {
   type IndicadorDef,
 } from "@/lib/delivery";
 import { calcularScore } from "@/lib/score";
-import { MARCA, nivelAuditoria, nivelDe } from "@/lib/marca";
+import { MARCA, MES_CORTE, escalaAuditoria, nivelAuditoria, nivelDe } from "@/lib/marca";
 import { CANALES } from "@/lib/sync/fuentes";
 import { type Busqueda, etiquetaMes, leerMes } from "@/lib/filtros";
 import { FiltroMeses, FiltroOpciones } from "@/components/filtros";
@@ -189,6 +189,10 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
     .filter((a) => a.location_id === local.id && a.audit_date.slice(0, 7) === mes)
     .sort((a, b) => b.audit_date.localeCompare(a.audit_date))[0];
   const dimensiones: DimensionAuditoria[] = auditoria?.categories ?? [];
+  const mesDelCorte = etiquetaMes(MES_CORTE).toLowerCase();
+  const cortesDeAuditoria = auditoria && escalaAuditoria(auditoria.audit_date) === "nueva"
+    ? `medida con la planilla vigente desde ${mesDelCorte}, más exigente que la anterior: 85 o más cumple. No se compara con informes anteriores a ${mesDelCorte}`
+    : "los cortes son los de la planilla: 95 se cumple totalmente, 90 mayoritariamente, 70 en buena parte, 50 en partes";
 
   const mesPrevio = meses[meses.indexOf(mes) + 1] ?? null;
   const filasDe = (m: string, conMarcaB: boolean) => {
@@ -327,14 +331,14 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
         {auditoria ? (
           <Bloque
             titulo="Resumen de auditoría"
-            bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · los cortes son los de la planilla: 95 se cumple totalmente, 90 mayoritariamente, 70 en buena parte, 50 en partes`}
+            bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · ${cortesDeAuditoria}`}
           >
             <p className="text-3xl font-semibold tabular-nums">
-              <span style={{ color: nivelAuditoria(auditoria.score_pct)?.color }}>
+              <span style={{ color: nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.color }}>
                 {auditoria.score_pct?.toFixed(2)}%
               </span>
               <span className="ml-3 text-sm font-normal text-[var(--color-grafito)]">
-                {nivelAuditoria(auditoria.score_pct)?.nombre}
+                {nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.nombre}
               </span>
             </p>
             {dimensiones.length > 0 ? (
@@ -354,7 +358,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
                         {d.peso_pct === null ? "—" : `${d.peso_pct}%`}
                       </Td>
                       <Td>
-                        <Barra pct={d.pct} color={nivelAuditoria(d.pct)?.color ?? colorMarca} />
+                        <Barra pct={d.pct} color={nivelAuditoria(d.pct, auditoria.audit_date)?.color ?? colorMarca} />
                       </Td>
                     </tr>
                   ))}
