@@ -1,12 +1,13 @@
 import {
   getAuditorias,
+  getLocalesCerrados,
   getMarcasYLocales,
   getVisitas,
   promedioValido,
   type AuditoriaFila,
 } from "@/lib/data";
-import { MES_CORTE, escalaAuditoria, nivelDe } from "@/lib/marca";
-import { serieAuditorias } from "@/lib/auditorias";
+import { MES_CORTE, escalaAuditoria, nivelAuditoria, nivelDe } from "@/lib/marca";
+import { esDelLooker, serieAuditorias, tieneFechaEstimada } from "@/lib/auditorias";
 import { type Busqueda, enMes, etiquetaMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
 import { FiltroMeses } from "@/components/filtros";
 import { GraficoLinea } from "@/components/graficos";
@@ -51,10 +52,11 @@ export default async function MsAuditoriasPage({
   searchParams: Promise<Busqueda>;
 }) {
   const filtros = await searchParams;
-  const [{ locales }, todasLasVisitas, todasLasAuditorias] = await Promise.all([
+  const [{ locales }, todasLasVisitas, todasLasAuditorias, cerrados] = await Promise.all([
     getMarcasYLocales(),
     getVisitas(),
     getAuditorias(),
+    getLocalesCerrados(),
   ]);
 
   // Los meses que ofrece el filtro salen de las DOS fuentes de la pantalla:
@@ -68,6 +70,8 @@ export default async function MsAuditoriasPage({
   const auditorias = todasLasAuditorias.filter((a) => enMes(a.audit_date, mes));
 
   const localPorId = new Map(locales.map((l) => [l.id, l]));
+  // Alta Córdoba cerró, pero sus auditorías de 2025 siguen en el histórico.
+  const cerradoPorId = new Map(cerrados.map((l) => [l.id, l.name]));
   // Las dos experiencias del formulario viven acá, pero NO se promedian
   // juntas: un pedido por delivery y una visita al salón no miden lo mismo.
   // (La sección Delivery muestra los indicadores de las apps —Rappi—, que son
@@ -78,7 +82,10 @@ export default async function MsAuditoriasPage({
 
   // La serie sale de TODAS las auditorías, sin el filtro de mes: una serie de
   // un solo mes no es una serie. El filtro marca el mes elegido, nada más.
-  const serie = serieAuditorias(todasLasAuditorias);
+  // Los locales cerrados se listan pero no entran al promedio de la serie.
+  const serie = serieAuditorias(
+    todasLasAuditorias.filter((a) => !(a.location_id && cerradoPorId.has(a.location_id))),
+  );
 
   return (
     <>
@@ -190,7 +197,8 @@ export default async function MsAuditoriasPage({
             {MES_DEL_CORTE} rige una planilla más exigente: 85 o más cumple, debajo no cumple. Las
             auditorías anteriores se leen con los cinco cortes de su propia planilla: 95 se cumple
             totalmente · 90 mayoritariamente · 70 en buena parte · 50 en partes. Las dos escalas no
-            se comparan entre sí.
+            se comparan entre sí. Las anteriores a {MES_DEL_CORTE} vienen del histórico del Looker,
+            que guarda solo el puntaje total.
           </p>
           <Tabla>
             <thead>
@@ -200,22 +208,55 @@ export default async function MsAuditoriasPage({
                 <Th>Auditor</Th>
                 <Th>Planilla</Th>
                 <Th className="text-right">Puntaje</Th>
+                <Th>Nivel</Th>
               </tr>
             </thead>
             <tbody>
               {auditorias.map((a) => {
                 const local = a.location_id ? localPorId.get(a.location_id) : null;
+                const cerrado = a.location_id ? cerradoPorId.get(a.location_id) : undefined;
                 const planilla = escalaAuditoria(a.audit_date);
+                const nivel = nivelAuditoria(a.score_pct, a.audit_date);
                 return (
                   <tr key={a.id} className="hover:bg-[var(--color-hueso)]">
-                    <Td className="whitespace-nowrap tabular-nums">{fechaCorta(a.audit_date)}</Td>
-                    <Td className="font-medium">{local?.name ?? <SinDato>—</SinDato>}</Td>
-                    <Td className="text-[var(--color-piedra)]">{a.auditor ?? "—"}</Td>
+                    <Td className="whitespace-nowrap tabular-nums">
+                      {fechaCorta(a.audit_date)}
+                      {tieneFechaEstimada(a) && (
+                        <span
+                          className="ml-2 text-xs text-[var(--color-piedra)]"
+                          title="El Looker no trae el día de esta auditoría. El mes es seguro."
+                        >
+                          día estimado
+                        </span>
+                      )}
+                    </Td>
+                    <Td className="font-medium">
+                      {local?.name ??
+                        (cerrado ? (
+                          <>
+                            {cerrado}
+                            <span className="ml-2 text-xs text-[var(--color-piedra)]">cerrado</span>
+                          </>
+                        ) : (
+                          <SinDato>—</SinDato>
+                        ))}
+                    </Td>
+                    <Td className="text-[var(--color-piedra)]">
+                      {a.auditor ??
+                        (esDelLooker(a) ? (
+                          <span className="text-xs">sin desglose · histórico del Looker</span>
+                        ) : (
+                          "—"
+                        ))}
+                    </Td>
                     <Td className="text-xs uppercase text-[var(--color-piedra)]">
                       {planilla === "desconocida" ? "sin dato" : planilla}
                     </Td>
                     <Td className="text-right">
                       <Puntaje pct={a.score_pct} escala="auditoria" fecha={a.audit_date} />
+                    </Td>
+                    <Td className="text-xs">
+                      <span style={{ color: nivel?.color }}>{nivel?.nombre ?? "—"}</span>
                     </Td>
                   </tr>
                 );
@@ -229,7 +270,7 @@ export default async function MsAuditoriasPage({
             Evolución del puntaje de auditoría
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
-            Promedios mensuales de todas las auditorías cargadas. El filtro de fecha no recorta
+            Promedios mensuales de las auditorías de locales activos. El filtro de fecha no recorta
             esta serie.
           </p>
           <Card>

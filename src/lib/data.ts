@@ -38,6 +38,19 @@ export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: L
   };
 }
 
+/**
+ * Los locales que dejaron de operar, solo para nombrar sus filas del histórico.
+ *
+ * `getMarcasYLocales` trae solo los activos y así tiene que seguir: de ahí salen
+ * los filtros y los promedios de marca, donde un local cerrado no va.
+ */
+export async function getLocalesCerrados(): Promise<{ id: string; name: string }[]> {
+  const supabase = await clienteDeLectura();
+  const { data, error } = await supabase.from("locations").select("id, name").eq("activo", false);
+  if (error) console.error("locations cerrados:", error.message);
+  return data ?? [];
+}
+
 export type ResenaFila = {
   id: string;
   location_id: string | null;
@@ -127,10 +140,11 @@ export type AuditoriaFila = {
 
 export async function getAuditorias(): Promise<AuditoriaFila[]> {
   const supabase = await clienteDeLectura();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("audits")
     .select("id, location_id, audit_date, auditor, score_pct, categories, source_sheet")
     .order("audit_date", { ascending: false });
+  if (error) console.error("audits:", error.message);
   return data ?? [];
 }
 

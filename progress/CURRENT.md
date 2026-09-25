@@ -7,11 +7,11 @@
 > archivo (estado). El detalle rico de todo lo construido antes del arnés está en
 > `../../memory.md` y `../HANDOFF.md`.
 
-**Última actualización:** 2026-09-13
-**Feature activa:** ninguna. C15 y C16 quedaron cerradas y publicadas el 13/09/2026.
-**Lo primero que conviene abrir:** cargar el histórico de 110 auditorías, que hoy vive solo en la
-planilla del Looker. Hasta que entre, el corte de C16 es un guardarraíl que no se ve funcionando:
-las 6 filas de `audits` son todas de agosto 2026 y ningún promedio cruza nada.
+**Última actualización:** 2026-09-25
+**Feature activa:** ninguna. C17 (histórico de auditorías) cerrada el 25/09/2026: los datos ya
+están en la base de producción; el código queda sin commit hasta el OK de Daniela para publicar.
+**Lo primero que conviene abrir:** el gráfico de evolución de auditorías. Con 20 meses cargados
+se le ven tres defectos de `GraficoLinea` que antes no aparecían (ver «Pendientes»).
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
 **En producción:** https://dashboard-cenfor.vercel.app
 
@@ -27,9 +27,29 @@ las 6 filas de `audits` son todas de agosto 2026 y ningún promedio cruza nada.
 | Delivery | **terminado**: Rappi, PedidosYa y Uber |
 | Plan de acción | lugar reservado en el menú, sin definir con el cliente |
 
-Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 6 auditorías · 884 valores de
+Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 120 auditorías (ene 2025 – ago 2026) · 884 valores de
 indicadores de delivery (julio y agosto 2026, tres canales) · 225 filas de motivos · 46 puntos
 de venta sobre 10 locales.
+
+---
+
+## El histórico de auditorías está en la base (C17, 25/09/2026)
+
+114 auditorías de ene 2025 – jul 2026, cargadas una sola vez desde la hoja `Puntaje auditorias`
+del Looker con `scripts/cargar-historico-auditorias.ts` (en seco por defecto; `--escribir` para
+guardar; una segunda corrida da «nuevas: 0»). No es una fuente del sync: desde agosto 2026 la
+fuente sigue siendo la planilla de auditoría, que trae las dimensiones.
+
+- **Sin desglose.** El Looker solo tiene el puntaje total: las pantallas dicen «sin desglose ·
+  histórico del Looker». Se reconocen por `source_sheet` (`ORIGEN_LOOKER` en `auditorias.ts`).
+- **Dos fechas corregidas**, decididas por Daniela y escritas como lista explícita en el script:
+  Nueva Córdoba 26/12/2026 → 26/12/2025, y la segunda Nueva Córdoba del 28/02/2025 (94%) →
+  28/03/2025, marcada «día estimado».
+- **Alta Córdoba** (cerrado): 2 auditorías de ene y feb 2025, listadas con «cerrado», fuera de
+  los promedios del Resumen y de la serie del gráfico.
+- Números: 112 de locales activos a **89,48%** (C16 decía 110 a 89,4%, contado antes). Julio
+  2026: 86,35% en 6. Con «Todo», el Resumen muestra los dos tramos: 77,0% nueva · 89,5% anterior.
+- Luuma agosto 2026 da 85,46 en la base y 85,00 en el Looker. Gana la base; no se tocó.
 
 ---
 
@@ -340,18 +360,25 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
 - **¿Woops Nueva Córdoba operó en agosto?** En PedidosYa trae 100% de cancelación evitable con
   score «-», 0 evaluaciones y 0% de pedidos listos. Ella sola lleva el promedio de las 16
   tiendas de 0% a 6,3%. El número es el que publica la app y se muestra tal cual.
-- **«Tiempo de espera evitable» no significa lo mismo en Uber que en PedidosYa** —una duración
-  contra un porcentaje— aunque la columna se llame igual en las dos planillas.
+- **«Tiempo de espera evitable»: definición de Daniela (25/09/2026)** — el tiempo que se podría
+  haber evitado perder mientras se preparan los pedidos. Sigue abierta la unidad: Uber lo da como
+  duración y PedidosYa como porcentaje (probablemente % de pedidos con espera evitable). Se
+  muestran por separado, sin compararlos.
 - **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
   es aceptable. Sin eso la pantalla muestra los números sin semáforo.
 - placeId de Censurado Luuma · qué mails van en `emails_autorizados`.
 
-**Feature aparte, ya decidida:**
-- **Cargar el histórico de auditorías anteriores a agosto 2026.** Daniela confirmó el 13/09/2026
-  que se va a cargar, pero fuera de C16. Son las 110 visitas de ene 2025 – jul 2026 que hoy viven
-  en la planilla del Looker (`Agrupado Looker - Censurado.xlsx`, hoja `Puntaje auditorias`), que
-  no es la que lee el sync: entra como fuente nueva. Hasta que estén, el corte de C16 no se ve
-  funcionando en ninguna pantalla.
+**Identidad visual:** CENFOR no tiene. Daniela decidió el 25/09/2026 que la paleta la definimos
+nosotros más adelante (`src/lib/marca.ts`, feature C11).
+
+**De construcción, visto por el revisor de C17 (código anterior a C17):**
+- `GraficoLinea` con 20 meses: las etiquetas del eje X se pisan, no aparece el rótulo del tramo
+  nuevo («planilla nueva, más exigente») y el eje Y arranca en 0 (0 / 36,3 / 72,6).
+- Un render de MS y Auditorías salió una vez con 0 auditorías y no se pudo reproducir. Desde C17
+  `getAuditorias` loguea el error de la consulta: si vuelve a pasar, queda en el log del server.
+
+**Para avisar al cliente (auditorías, C17):** en la hoja `Puntaje auditorias` del Looker hay una
+fecha 26/12/2026 que es 2025, y dos auditorías de Nueva Córdoba el 28/02/2025 (una es de marzo).
 
 **Para avisar al cliente (datos económicos, C15):**
 - Agosto 2026: General Paz y Poeta Lugones sin órdenes cargadas.
@@ -361,8 +388,6 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
 - Sigue abierto con ellos qué mide Compras/ventas y cómo se compone la rentabilidad.
 
 **Tareas manuales:**
-- Publicar la app en Google si se quiere abrir al equipo (hoy está en modo Prueba: solo entran
-  los mails cargados como usuarios de prueba).
 - Avisarle al cliente que las planillas tienen las fechas con el formato roto (usan `AAAA` para
   el año). El sync lo esquiva, pero si alguien exporta o imprime, salen sin año.
 

@@ -121,3 +121,31 @@ export function serieAuditorias(auditorias: FilaAuditoria[]): {
     }),
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// EL HISTÓRICO DEL LOOKER (C17)
+//
+// Las auditorías de ene 2025 – jul 2026 se cargaron una sola vez desde la hoja
+// «Puntaje auditorias» de la planilla del Looker
+// (`scripts/cargar-historico-auditorias.ts`). Esa hoja trae solo el puntaje
+// total: sin dimensiones, sin auditor. Una de sus fechas además se estimó.
+//
+// La marca vive en `source_sheet` para no cambiar el esquema de `audits`. El
+// script y las pantallas leen los mismos dos textos de acá: si uno cambia, el
+// otro no puede quedar desfasado.
+// ─────────────────────────────────────────────────────────────────────────
+
+export const ORIGEN_LOOKER = "Looker · histórico";
+export const ORIGEN_LOOKER_FECHA_ESTIMADA = `${ORIGEN_LOOKER} · fecha estimada`;
+
+type ConOrigen = { source_sheet: string | null };
+
+/** La auditoría viene del histórico del Looker: tiene puntaje y nada más. */
+export function esDelLooker(a: ConOrigen): boolean {
+  return a.source_sheet?.startsWith(ORIGEN_LOOKER) ?? false;
+}
+
+/** El día de la auditoría no se sabe: se ubicó en su mes con una fecha estimada. */
+export function tieneFechaEstimada(a: ConOrigen): boolean {
+  return a.source_sheet === ORIGEN_LOOKER_FECHA_ESTIMADA;
+}

@@ -26,6 +26,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "exceljs": "^4.4.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5"

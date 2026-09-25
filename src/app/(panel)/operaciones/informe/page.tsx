@@ -17,12 +17,14 @@ import {
   type IndicadorDef,
 } from "@/lib/delivery";
 import { calcularScore } from "@/lib/score";
+import { esDelLooker, tieneFechaEstimada } from "@/lib/auditorias";
 import { MARCA, MES_CORTE, escalaAuditoria, nivelAuditoria, nivelDe } from "@/lib/marca";
 import { CANALES } from "@/lib/sync/fuentes";
 import { type Busqueda, etiquetaMes, leerMes } from "@/lib/filtros";
 import { FiltroMeses, FiltroOpciones } from "@/components/filtros";
 import { PageHeader, SinDato, Tabla, Td, Th, Variacion } from "@/components/ui";
 import { BotonImprimir } from "./imprimir";
+import { Barra, Bloque } from "./partes";
 
 export const dynamic = "force-dynamic";
 
@@ -43,45 +45,6 @@ export const dynamic = "force-dynamic";
 // en cada visita nueva. El informe de agosto tiene que decir lo mismo dentro
 // de seis meses.
 // ─────────────────────────────────────────────────────────────────────────
-
-/** Un bloque con título, de los que se numeran en el documento. */
-function Bloque({
-  titulo,
-  bajada,
-  children,
-}: {
-  titulo: string;
-  bajada?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
-          {titulo}
-        </h2>
-        {bajada && <p className="mt-1 pl-3 text-xs text-[var(--color-piedra)]">{bajada}</p>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-/** Una barra horizontal con el porcentaje adentro, para leer 9 filas de un vistazo. */
-function Barra({ pct, color }: { pct: number | null; color: string }) {
-  if (pct === null) return <SinDato>—</SinDato>;
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-2 w-full max-w-[220px] overflow-hidden rounded-full bg-[var(--color-nube)]">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${Math.min(100, Math.max(0, pct))}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="w-14 shrink-0 text-right text-xs tabular-nums">{pct.toFixed(1)}%</span>
-    </div>
-  );
-}
 
 /** "a, b y c" — una lista escrita como se escribe en castellano, no con "y" repetida. */
 function enumerar(partes: string[]): string {
@@ -193,6 +156,9 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
   const cortesDeAuditoria = auditoria && escalaAuditoria(auditoria.audit_date) === "nueva"
     ? `medida con la planilla vigente desde ${mesDelCorte}, más exigente que la anterior: 85 o más cumple. No se compara con informes anteriores a ${mesDelCorte}`
     : "los cortes son los de la planilla: 95 se cumple totalmente, 90 mayoritariamente, 70 en buena parte, 50 en partes";
+  const sinDesglose = auditoria && esDelLooker(auditoria)
+    ? "Este mes no tiene desglose por dimensión: el histórico del Looker guarda solo el puntaje total."
+    : "Esta auditoría se guardó antes de que el sync leyera el desglose por dimensión. Entra sola en la próxima corrida.";
 
   const mesPrevio = meses[meses.indexOf(mes) + 1] ?? null;
   const filasDe = (m: string, conMarcaB: boolean) => {
@@ -331,7 +297,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
         {auditoria ? (
           <Bloque
             titulo="Resumen de auditoría"
-            bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · ${cortesDeAuditoria}`}
+            bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${tieneFechaEstimada(auditoria) ? " (día estimado)" : ""}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · ${cortesDeAuditoria}`}
           >
             <p className="text-3xl font-semibold tabular-nums">
               <span style={{ color: nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.color }}>
@@ -365,10 +331,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
                 </tbody>
               </Tabla>
             ) : (
-              <SinDato>
-                Esta auditoría se guardó antes de que el sync leyera el desglose por dimensión.
-                Entra sola en la próxima corrida.
-              </SinDato>
+              <SinDato>{sinDesglose}</SinDato>
             )}
           </Bloque>
         ) : (
