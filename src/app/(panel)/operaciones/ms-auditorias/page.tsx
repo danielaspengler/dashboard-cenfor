@@ -36,6 +36,18 @@ const MES_DEL_CORTE = etiquetaMes(MES_CORTE).toLowerCase();
  * Lo que hace falta es decir que las que cuenta no se comparan entre sí cuando
  * vienen de los dos lados.
  */
+/**
+ * La escala del gráfico de auditorías: de 55 a 100, con las guías en 55, 70 y
+ * 85 —85 es el corte de la planilla nueva—. Desde cero, toda la serie quedaba
+ * apretada arriba y la caída de agosto 2026 no se leía. Si algún mes baja de
+ * 60, el piso baja con él para no cortar la línea.
+ */
+function dominioAuditorias(valores: (number | null)[]): [number, number] {
+  const nums = valores.filter((v): v is number => v !== null);
+  const piso = Math.min(55, Math.floor((Math.min(...nums) - 5) / 15) * 15);
+  return [piso, 100];
+}
+
 function repartoPorPlanilla(auditorias: AuditoriaFila[]): string {
   if (!auditorias.length) return "solo Censurado";
   const nuevas = auditorias.filter((a) => escalaAuditoria(a.audit_date) === "nueva").length;
@@ -283,10 +295,10 @@ export default async function MsAuditoriasPage({
                 valores={serie.valores}
                 formato={(v) => `${v.toFixed(1)}%`}
                 marcado={mes}
+                dominio={dominioAuditorias(serie.valores)}
                 corte={{
                   mes: MES_CORTE,
                   antes: "medido con la planilla anterior",
-                  desde: "planilla nueva, más exigente",
                 }}
               />
             )}

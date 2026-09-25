@@ -10,8 +10,8 @@
 **Última actualización:** 2026-09-25
 **Feature activa:** ninguna. C17 (histórico de auditorías) cerrada el 25/09/2026: los datos ya
 están en la base y el código se publicó el mismo día (commit 53409b1).
-**Lo primero que conviene abrir:** el gráfico de evolución de auditorías. Con 20 meses cargados
-se le ven tres defectos de `GraficoLinea` que antes no aparecían (ver «Pendientes»).
+**Lo primero que conviene abrir:** los pendientes con el cliente (umbrales de delivery, Woops,
+Compras/ventas) o la paleta propia (C11).
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
 **En producción:** https://dashboard-cenfor.vercel.app
 
@@ -372,8 +372,9 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
 nosotros más adelante (`src/lib/marca.ts`, feature C11).
 
 **De construcción, visto por el revisor de C17 (código anterior a C17):**
-- `GraficoLinea` con 20 meses: las etiquetas del eje X se pisan, no aparece el rótulo del tramo
-  nuevo («planilla nueva, más exigente») y el eje Y arranca en 0 (0 / 36,3 / 72,6).
+- ~~`GraficoLinea` con 20 meses~~ — arreglado el 25/09/2026: rótulos de mes cada `paso` (el
+  último y el elegido siempre se ven), sin el rótulo «planilla nueva» (decisión de Daniela) y la
+  escala de auditorías de 55 a 100 con guías en 55/70/85.
 - Un render de MS y Auditorías salió una vez con 0 auditorías y no se pudo reproducir. Desde C17
   `getAuditorias` loguea el error de la consulta: si vuelve a pasar, queda en el log del server.
 

@@ -23,6 +23,9 @@ const centro = (m: Marco, i: number) => m.izq + anchoColumna(m) * (i + 0.5);
 
 const hayDatos = (valores: (number | null)[]) => valores.some((v) => v !== null);
 
+/** Lo que ocupa un rótulo de mes ("ago 26") a 10 px, con aire a los lados. */
+const ANCHO_ROTULO = 40;
+
 /** Sin ningún valor no se dibujan ejes: una escala de 0 a 1 se leería como un cero. */
 function SinDatoGrafico() {
   return <p className="py-6 text-center text-sm italic text-[var(--color-piedra)]">sin dato</p>;
@@ -65,8 +68,16 @@ function Fondo({
   const cw = anchoColumna(marco);
   const i = meses.indexOf(marcado);
   // En un gráfico chico trece rótulos se pisan: quedan el primero, el último y el elegido.
-  const conRotulo = (k: number) =>
-    !soloExtremos || k === 0 || k === meses.length - 1 || k === i;
+  // En uno grande con muchos meses va uno cada `paso`, contado desde el último para
+  // que el mes más reciente siempre se lea. El elegido se muestra siempre, y sus
+  // vecinos a menos de un paso se callan para no pisarlo.
+  const paso = Math.ceil(ANCHO_ROTULO / cw);
+  const conRotulo = (k: number) => {
+    if (k === i) return true;
+    if (soloExtremos) return k === 0 || k === meses.length - 1;
+    if (i >= 0 && Math.abs(k - i) < paso) return false;
+    return (meses.length - 1 - k) % paso === 0;
+  };
   return (
     <g>
       {i >= 0 && (
@@ -276,9 +287,9 @@ function Punto({
 export type CorteSerie = {
   /** El mes desde el que rige la vara nueva, "YYYY-MM". */
   mes: string;
-  /** Qué dice la etiqueta de cada lado de la línea. */
+  /** Qué dice la etiqueta de cada lado de la línea. Sin `desde`, el tramo nuevo va sin rótulo. */
   antes: string;
-  desde: string;
+  desde?: string;
 };
 
 /**
@@ -318,7 +329,7 @@ function MarcaCorte({
           {corte.antes}
         </text>
       )}
-      {meses.length - i > 1 && (
+      {corte.desde && meses.length - i > 1 && (
         <text x={x + 4} y={ARRIBA - 5} textAnchor="start" fontSize={9} className="fill-[var(--color-piedra)]">
           {corte.desde}
         </text>
