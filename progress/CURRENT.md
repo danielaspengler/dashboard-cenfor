@@ -9,7 +9,7 @@
 
 **Última actualización:** 2026-09-25
 **Feature activa:** ninguna. C17 (histórico de auditorías) cerrada el 25/09/2026: los datos ya
-están en la base de producción; el código queda sin commit hasta el OK de Daniela para publicar.
+están en la base y el código se publicó el mismo día (commit 53409b1).
 **Lo primero que conviene abrir:** el gráfico de evolución de auditorías. Con 20 meses cargados
 se le ven tres defectos de `GraficoLinea` que antes no aparecían (ver «Pendientes»).
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
