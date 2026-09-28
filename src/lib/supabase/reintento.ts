@@ -28,6 +28,10 @@ async function esPasajera(respuesta: Response): Promise<boolean> {
   return cuerpo.includes("JWT issued at future");
 }
 
+/** La tabla del pedido, para el log: el resto de la URL puede traer filtros largos. */
+const tabla = (entrada: Parameters<typeof fetch>[0]) =>
+  String(entrada instanceof Request ? entrada.url : entrada).split("?")[0].split("/").pop();
+
 /** Un pedido por una conexión que no se reusa ni se guarda. */
 function porConexionNueva(entrada: Parameters<typeof fetch>[0], init?: RequestInit) {
   const agente = new Agent({ keepAliveTimeout: 1, keepAliveMaxTimeout: 1 });
@@ -43,9 +47,11 @@ export const fetchConReintento: typeof fetch = async (entrada, init) => {
     try {
       const respuesta = await intento();
       if (!(await esPasajera(respuesta))) return respuesta;
+      console.warn(`reintento: ${respuesta.status} en ${tabla(entrada)}`);
     } catch {
       // Corte de red: se prueba de nuevo. Si el último intento también falla,
       // ese error es el que sube.
+      console.warn(`reintento: corte de red en ${tabla(entrada)}`);
     }
     await new Promise((r) => setTimeout(r, espera));
     intento = () => porConexionNueva(entrada, init);
