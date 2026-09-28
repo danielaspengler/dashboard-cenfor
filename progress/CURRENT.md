@@ -15,6 +15,23 @@ Compras/ventas) o la paleta propia (C11).
 **En stand by:** C12 (plan de acción), por decisión de Daniela.
 **En producción:** https://dashboard-cenfor.vercel.app
 
+**⚠ El cron diario no está guardando (detectado el 28/09/2026).** La base tenía 29 reseñas, la última
+del 01/09, mientras la planilla ya tenía 57 hasta el 28/09. Llamado a mano con el `CRON_SECRET`,
+`/api/sync` en producción anda (200, 5,5 s, cero errores) y dejó la base al día. O sea, el código y
+la clave están bien: lo que falla es el disparo. Sospecha principal: el límite de 2 crons del plan
+Hobby es **por cuenta**, y si Papanato sumó crons el de CENFOR queda afuera. **Revisar en Vercel →
+dashboard-cenfor → Settings → Cron Jobs y los logs de /api/sync.** No hay acceso a Vercel desde
+Claude.
+
+**Auditorías de septiembre sin cargar.** El cliente sumó 6 pestañas nuevas a la planilla de
+auditorías (Nueva Cordoba 18-09-2026, Urca 20-09, Poeta Lugones 24-09, General Paz 25-09, Recta
+Martinolli 26-09, Carlos Paz 27-09) con otro formato: el parser no encuentra el campo LOCAL y las
+descarta. Hay que relevar el formato nuevo y adaptar el parser. Poeta Lugones no tenía
+`audit_sheet_label` (nunca se había auditado).
+
+**El snapshot de Google sigue en 01/09** aunque las reseñas llegan hasta el 28/09: la hoja
+`Rating_Snapshot` no se actualizó. Es del lado de la planilla del cliente, no del sync.
+
 ---
 
 ## Dónde está todo parado
