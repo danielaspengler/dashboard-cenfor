@@ -158,35 +158,43 @@ export default async function ResenasPage({
           <h2 className="mb-3 titulo-seccion">
             Últimas reseñas
           </h2>
-          <div className="space-y-3">
-            {resenas.length === 0 && (
-              <Card className="p-4">
-                <SinDato>
-                  No hay reseñas en {etiquetaMes(mes).toLowerCase()}. El acumulado de arriba
-                  no cambia: es el histórico de la ficha de Google.
-                </SinDato>
-              </Card>
-            )}
-            {resenas.slice(0, 40).map((r) => {
-              const local = r.location_id ? localPorId.get(r.location_id) : null;
-              const n = nivelResena(r.rating);
-              return (
-                <Card key={r.id} className="p-4">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-                    <span className="font-semibold tabular-nums" style={{ color: n?.color }}>
-                      {r.rating}★
-                    </span>
-                    <span className="font-medium">{r.author ?? "Anónimo"}</span>
-                    <span className="text-xs text-[var(--color-piedra)]">
-                      {local ? `${local.marca} · ${local.name}` : "local desconocido"} ·{" "}
-                      {fechaCorta(r.review_date)}
-                    </span>
-                  </div>
-                  {r.text && <p className="mt-2 text-sm leading-relaxed">{r.text}</p>}
-                </Card>
-              );
-            })}
-          </div>
+          {resenas.length === 0 ? (
+            <Card className="p-4">
+              <SinDato>
+                No hay reseñas en {etiquetaMes(mes).toLowerCase()}. El acumulado de arriba
+                no cambia: es el histórico de la ficha de Google.
+              </SinDato>
+            </Card>
+          ) : (
+            // Una sola tarjeta con scroll propio: con todas las reseñas una
+            // debajo de la otra, la página se volvía interminable.
+            <Card className="p-0!">
+              <p className="border-b border-[var(--color-tarjeta-borde)] px-5 py-2.5 text-xs text-[var(--color-piedra)]">
+                {resenas.length} {resenas.length === 1 ? "reseña" : "reseñas"} · de la más nueva a la más vieja
+              </p>
+              <ul className="max-h-[560px] divide-y divide-[var(--color-tarjeta-borde)] overflow-y-auto">
+                {resenas.map((r) => {
+                  const local = r.location_id ? localPorId.get(r.location_id) : null;
+                  const n = nivelResena(r.rating);
+                  return (
+                    <li key={r.id} className="px-5 py-4">
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+                        <span className="font-semibold tabular-nums" style={{ color: n?.color }}>
+                          {r.rating}★
+                        </span>
+                        <span className="font-medium">{r.author ?? "Anónimo"}</span>
+                        <span className="text-xs text-[var(--color-piedra)]">
+                          {local ? `${local.marca} · ${local.name}` : "local desconocido"} ·{" "}
+                          {fechaCorta(r.review_date)}
+                        </span>
+                      </div>
+                      {r.text && <p className="mt-2 text-sm leading-relaxed">{r.text}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
         </section>
       </div>
     </>
