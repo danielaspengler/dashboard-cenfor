@@ -129,7 +129,7 @@ export default async function DeliveryPage({
   const encabezado = (
     <PageHeader
       titulo="Delivery"
-      bajada="Solo Censurado vende por app · la unidad es el punto de venta, no el local"
+      bajada="La unidad es el punto de venta, no el local"
       extra={
         <div className="flex items-center gap-2">
           <FiltroCanal actual={canal} canales={[...CANALES]} />

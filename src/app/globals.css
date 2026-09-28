@@ -23,6 +23,12 @@
      identidad (#005A50) aclarado un paso —el original en barras se lee casi
      negro— y la mostaza de la misma propuesta, oscurecida para leerse sobre
      el beige. Validados de a par: contraste y daltonismo (28/09/2026). */
+  /* El menú lateral: negro con letras beige. La sección activa se invierte. */
+  --color-menu: #1c1c1a;
+  --color-menu-texto: #f8f3ea;
+  --color-menu-tenue: #a39d90;
+  --color-menu-linea: #34332f;
+  --color-menu-hover: #2c2b28;
   --color-serie-1: #00806f;
   --color-serie-2: #c28a2c;
 }

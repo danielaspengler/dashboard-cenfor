@@ -21,16 +21,16 @@ export function Sidebar({ email }: { email: string | null }) {
   }
 
   return (
-    <nav className="flex w-60 shrink-0 flex-col border-r border-[var(--color-borde)] bg-white">
-      <div className="border-b border-[var(--color-borde)] px-5 py-4">
+    <nav className="flex w-60 shrink-0 flex-col bg-[var(--color-menu)] text-[var(--color-menu-texto)]">
+      <div className="border-b border-[var(--color-menu-linea)] px-5 py-4">
         <div className="text-lg font-semibold tracking-tight">{MARCA.nombre}</div>
-        <div className="text-xs text-[var(--color-piedra)]">{MARCA.bajada}</div>
+        <div className="text-xs text-[var(--color-menu-tenue)]">{MARCA.bajada}</div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {NAVIGATION.map((area) => (
           <div key={area.slug} className="mb-5">
-            <div className="mb-1 flex items-center gap-2 px-2 text-xs font-medium uppercase tracking-wide text-[var(--color-piedra)]">
+            <div className="mb-1 flex items-center gap-2 px-2 text-xs font-medium uppercase tracking-wide text-[var(--color-menu-tenue)]">
               <area.icon size={13} />
               {area.label}
               {area.status === "proximamente" && (
@@ -46,8 +46,8 @@ export function Sidebar({ email }: { email: string | null }) {
                   href={conFiltros(s.href)}
                   className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
                     activa
-                      ? "bg-[var(--color-tinta)] text-white"
-                      : "text-[var(--color-tinta)] hover:bg-[var(--color-hueso)]"
+                      ? "bg-[var(--color-menu-texto)] font-medium text-[var(--color-menu)]"
+                      : "hover:bg-[var(--color-menu-hover)]"
                   }`}
                 >
                   <s.icon size={15} />
@@ -59,10 +59,10 @@ export function Sidebar({ email }: { email: string | null }) {
         ))}
       </div>
 
-      <div className="border-t border-[var(--color-borde)] px-4 py-3">
+      <div className="border-t border-[var(--color-menu-linea)] px-4 py-3">
         {email ? (
           <>
-            <div className="truncate text-xs text-[var(--color-piedra)]" title={email}>
+            <div className="truncate text-xs text-[var(--color-menu-tenue)]" title={email}>
               {email}
             </div>
             <button onClick={salir} className="mt-1 text-xs underline underline-offset-4">
@@ -70,7 +70,7 @@ export function Sidebar({ email }: { email: string | null }) {
             </button>
           </>
         ) : (
-          <div className="text-xs text-[var(--color-piedra)]">Demostración</div>
+          <div className="text-xs text-[var(--color-menu-tenue)]">Demostración</div>
         )}
       </div>
     </nav>
