@@ -98,7 +98,7 @@ export const NAVIGATION: NavArea[] = [
     status: "activo",
     sections: [
       {
-        label: "Resumen administrativo",
+        label: "Resumen Censurado",
         href: "/administracion/resumen",
         icon: ChartColumn,
         status: "activo",
