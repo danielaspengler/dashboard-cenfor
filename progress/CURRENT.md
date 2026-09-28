@@ -427,11 +427,13 @@ nosotros más adelante (`src/lib/marca.ts`, feature C11).
   12 consultas de las pantallas pasan por `exigir()` (`src/lib/lectura.ts`): si fallan dos veces,
   la pantalla muestra «No se pudieron leer los datos» con un botón para reintentar
   (`(panel)/error.tsx`). Una tabla que la RLS deja vacía NO es error y sigue su camino.
-  **Sigue abierto:** el 28/09, ya con el reintento, Delivery cayó una vez en la pantalla de error
-  (primera carga tras `next start`, con el log apagado). O sea: el reintento no alcanza, la falla
-  dura más de 300 ms o no es de red. No se reprodujo en 5 reinicios más con el log prendido.
-  **Próximo paso:** buscar «No se pudo leer» en los logs de Vercel; el mensaje trae la tabla y el
-  error de Supabase. En local, levantar siempre con el log a un archivo.
+  **Causa encontrada (28/09):** «JWT issued at future». Con las claves nuevas de Supabase
+  (`sb_secret_…`) el gateway emite un JWT por pedido; si el nodo que atiende tiene el reloj
+  adelantado, la base lo rechaza con 401. Esperar no alcanza porque Node reusa la conexión y el
+  reintento cae en el mismo nodo: ahora cada reintento sale por una conexión nueva (`undici`
+  Agent en `reintento.ts`). Tres ciclos build + start sin fallas después del cambio; como el
+  reintento no deja registro cuando rescata, eso no prueba del todo que lo esté haciendo. Si
+  vuelve la pantalla de error, el log dice la tabla y el mensaje.
 
 **Para avisar al cliente (auditorías, C17):** en la hoja `Puntaje auditorias` del Looker hay una
 fecha 26/12/2026 que es 2025, y dos auditorías de Nueva Córdoba el 28/02/2025 (una es de marzo).

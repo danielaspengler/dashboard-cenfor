@@ -111,7 +111,12 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
             }))}
           />
           <FiltroMeses actual={mes} meses={meses} conTodo={false} />
-          <BotonImprimir />
+          {local && (
+            <BotonImprimir
+              archivo={`Informe ${local.marca} ${local.name} - ${etiquetaMes(mes)}.pdf`}
+              pie={`${local.marca} — ${local.name} · ${etiquetaMes(mes)} · ${MARCA.nombre}`}
+            />
+          )}
         </div>
       }
     />
@@ -242,110 +247,112 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
 
       <article className="space-y-8 p-7 print:p-0">
         {/* ── Hoja 1: el score y sus componentes ───────────────────────── */}
-        <header className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--color-tinta)] pb-3">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-[var(--color-piedra)]">
-              {local.marca}
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {local.name} — informe de calidad
-            </h1>
-          </div>
-          <p className="text-sm text-[var(--color-grafito)]">{etiquetaMes(mes)}</p>
-        </header>
-
-        <Bloque
-          titulo="Score del local"
-          bajada={`Los indicadores del tablero en un solo número. ${
-            score.sinDato.length
-              ? `Este mes falta ${enumerar(score.sinDato.map((e) => e.nombre.toLowerCase()))}: su peso se reparte entre los demás, no cuenta como cero.`
-              : `Con ${score.ejes.length === 2 ? "los dos ejes" : "los cuatro ejes"} del modelo de ${local.marca} medidos.`
-          }`}
-        >
-          <div className="flex flex-wrap items-center gap-6">
-            <div
-              className="flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-full border-4"
-              style={{ borderColor: colorMarca }}
-            >
-              <span className="text-3xl font-semibold tabular-nums">
-                {score.valor === null ? "—" : score.valor.toFixed(2)}
-              </span>
-              <span className="text-[10px] uppercase tracking-wide text-[var(--color-piedra)]">
-                sobre 100
-              </span>
+        <div data-hoja className="space-y-8">
+          <header className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--color-tinta)] pb-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[var(--color-piedra)]">
+                {local.marca}
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {local.name} — informe de calidad
+              </h1>
             </div>
-            <dl className="min-w-[280px] flex-1 space-y-2">
-              {score.ejes.map((e) => (
-                <div key={e.clave} className="flex items-center gap-3 text-sm">
-                  <dt className="w-36 shrink-0">
-                    {e.nombre}
-                    <span className="ml-1 text-xs text-[var(--color-piedra)]">{e.peso}%</span>
-                  </dt>
-                  <dd className="flex-1">
-                    {e.valor === null ? (
-                      <SinDato>{e.detalle}</SinDato>
-                    ) : (
-                      <Barra pct={e.valor} color={colorMarca} />
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </Bloque>
+            <p className="text-sm text-[var(--color-grafito)]">{etiquetaMes(mes)}</p>
+          </header>
 
-        {auditoria ? (
           <Bloque
-            titulo="Resumen de auditoría"
-            bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${tieneFechaEstimada(auditoria) ? " (día estimado)" : ""}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · ${cortesDeAuditoria}`}
+            titulo="Score del local"
+            bajada={`Los indicadores del tablero en un solo número. ${
+              score.sinDato.length
+                ? `Este mes falta ${enumerar(score.sinDato.map((e) => e.nombre.toLowerCase()))}: su peso se reparte entre los demás, no cuenta como cero.`
+                : `Con ${score.ejes.length === 2 ? "los dos ejes" : "los cuatro ejes"} del modelo de ${local.marca} medidos.`
+            }`}
           >
-            <p className="text-3xl font-semibold tabular-nums">
-              <span style={{ color: nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.color }}>
-                {auditoria.score_pct?.toFixed(2)}%
-              </span>
-              <span className="ml-3 text-sm font-normal text-[var(--color-grafito)]">
-                {nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.nombre}
-              </span>
-            </p>
-            {dimensiones.length > 0 ? (
-              <Tabla>
-                <thead>
-                  <tr>
-                    <Th>Dimensión</Th>
-                    <Th className="text-right">Peso</Th>
-                    <Th>Alcanzado</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dimensiones.map((d) => (
-                    <tr key={d.letra}>
-                      <Td className="whitespace-nowrap font-medium">{d.nombre}</Td>
-                      <Td className="text-right tabular-nums text-[var(--color-piedra)]">
-                        {d.peso_pct === null ? "—" : `${d.peso_pct}%`}
-                      </Td>
-                      <Td>
-                        <Barra pct={d.pct} color={nivelAuditoria(d.pct, auditoria.audit_date)?.color ?? colorMarca} />
-                      </Td>
+            <div className="flex flex-wrap items-center gap-6">
+              <div
+                className="flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-full border-4"
+                style={{ borderColor: colorMarca }}
+              >
+                <span className="text-3xl font-semibold tabular-nums">
+                  {score.valor === null ? "—" : score.valor.toFixed(2)}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide text-[var(--color-piedra)]">
+                  sobre 100
+                </span>
+              </div>
+              <dl className="min-w-[280px] flex-1 space-y-2">
+                {score.ejes.map((e) => (
+                  <div key={e.clave} className="flex items-center gap-3 text-sm">
+                    <dt className="w-36 shrink-0">
+                      {e.nombre}
+                      <span className="ml-1 text-xs text-[var(--color-piedra)]">{e.peso}%</span>
+                    </dt>
+                    <dd className="flex-1">
+                      {e.valor === null ? (
+                        <SinDato>{e.detalle}</SinDato>
+                      ) : (
+                        <Barra pct={e.valor} color={colorMarca} />
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </Bloque>
+
+          {auditoria ? (
+            <Bloque
+              titulo="Resumen de auditoría"
+              bajada={`Auditoría del ${auditoria.audit_date.slice(8, 10)}/${auditoria.audit_date.slice(5, 7)}${tieneFechaEstimada(auditoria) ? " (día estimado)" : ""}${auditoria.auditor ? ` · ${auditoria.auditor}` : ""} · ${cortesDeAuditoria}`}
+            >
+              <p className="text-3xl font-semibold tabular-nums">
+                <span style={{ color: nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.color }}>
+                  {auditoria.score_pct?.toFixed(2)}%
+                </span>
+                <span className="ml-3 text-sm font-normal text-[var(--color-grafito)]">
+                  {nivelAuditoria(auditoria.score_pct, auditoria.audit_date)?.nombre}
+                </span>
+              </p>
+              {dimensiones.length > 0 ? (
+                <Tabla>
+                  <thead>
+                    <tr>
+                      <Th>Dimensión</Th>
+                      <Th className="text-right">Peso</Th>
+                      <Th>Alcanzado</Th>
                     </tr>
-                  ))}
-                </tbody>
-              </Tabla>
-            ) : (
-              <SinDato>{sinDesglose}</SinDato>
-            )}
-          </Bloque>
-        ) : (
-          <Bloque titulo="Resumen de auditoría">
-            <SinDato>
-              {marcaSlug === "formaggio"
-                ? "Formaggio no tiene auditoría presencial."
-                : `Sin auditoría en ${etiquetaMes(mes).toLowerCase()}.`}
-            </SinDato>
-          </Bloque>
-        )}
+                  </thead>
+                  <tbody>
+                    {dimensiones.map((d) => (
+                      <tr key={d.letra}>
+                        <Td className="whitespace-nowrap font-medium">{d.nombre}</Td>
+                        <Td className="text-right tabular-nums text-[var(--color-piedra)]">
+                          {d.peso_pct === null ? "—" : `${d.peso_pct}%`}
+                        </Td>
+                        <Td>
+                          <Barra pct={d.pct} color={nivelAuditoria(d.pct, auditoria.audit_date)?.color ?? colorMarca} />
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Tabla>
+              ) : (
+                <SinDato>{sinDesglose}</SinDato>
+              )}
+            </Bloque>
+          ) : (
+            <Bloque titulo="Resumen de auditoría">
+              <SinDato>
+                {marcaSlug === "formaggio"
+                  ? "Formaggio no tiene auditoría presencial."
+                  : `Sin auditoría en ${etiquetaMes(mes).toLowerCase()}.`}
+              </SinDato>
+            </Bloque>
+          )}
+        </div>
 
         {/* ── Hoja 2: la visita y las apps ─────────────────────────────── */}
-        <div className="break-before-page space-y-8">
+        <div data-hoja className="break-before-page space-y-8">
           <Bloque
             titulo="Resumen de mystery shopper"
             bajada={
@@ -427,7 +434,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
         </div>
 
         {/* ── Hoja 3: las marcas B y el plan de acción ─────────────────── */}
-        <div className="break-before-page space-y-8">
+        <div data-hoja className="break-before-page space-y-8">
           {marcasB.length > 0 && (
             <Bloque
               titulo="Otras marcas en este local"

@@ -348,7 +348,7 @@ function Encabezado({ local, conDatos, mes, meses }: { local: string; conDatos: 
   ];
   return (
     <PageHeader
-      titulo="Resumen administrativo"
+      titulo="Resumen Censurado"
       bajada="Ventas, costos y rentabilidad de cada local, por mes"
       extra={
         <div className="flex items-center gap-2">
