@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { fetchConReintento } from "./reintento";
 
 // Cliente para componentes de servidor. Lee con la sesión de la persona,
 // así que la RLS decide qué ve: si su mail no está autorizado, las
@@ -10,6 +11,7 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: fetchConReintento },
       cookies: {
         getAll() {
           return cookieStore.getAll();

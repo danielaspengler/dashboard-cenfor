@@ -1,4 +1,5 @@
 import { clienteDeLectura } from "@/lib/demo";
+import { exigir } from "@/lib/lectura";
 
 // ─────────────────────────────────────────────────────────────────────────
 // DELIVERY
@@ -83,8 +84,7 @@ export async function getIndicadores(): Promise<IndicadorDef[]> {
       "id, channel, clave, nombre, unidad, mejor_si_baja, destacado, orden, pondera_con, rol",
     )
     .order("orden");
-  if (error) console.error("delivery_metric_defs:", error.message);
-  return (data ?? []) as IndicadorDef[];
+  return exigir({ data, error }, "delivery_metric_defs") as IndicadorDef[];
 }
 
 export async function getPuntosDeVenta(): Promise<PuntoDeVenta[]> {
@@ -95,15 +95,13 @@ export async function getPuntosDeVenta(): Promise<PuntoDeVenta[]> {
       "id, location_id, channel, formato, name, activo, locations(name, slug), sub_brands(name)",
     )
     .order("name");
-  // Una consulta que falla devuelve `data` en null y la pantalla se dibuja
-  // vacía sin decir nada. Al menos que quede en el log del servidor.
-  if (error) console.error("delivery_points:", error.message);
+  const puntos = exigir({ data, error }, "delivery_points");
 
   // Vienen TODOS, incluidos los inactivos. Alta Córdoba dejó de operar pero
   // tiene julio y agosto cargados: si la consulta los filtrara, esas filas de
   // indicadores quedarían en la pantalla sin nombre, como pasó la primera vez
   // que se dibujó. Quién entra a los promedios lo decide la pantalla.
-  return (data ?? []).map((p) => ({
+  return puntos.map((p) => ({
     id: p.id,
     location_id: p.location_id,
     channel: p.channel,
@@ -122,8 +120,10 @@ export async function getValoresDelivery(): Promise<ValorDelivery[]> {
     .from("delivery_metric_values")
     .select("delivery_point_id, metric_def_id, period_start, period_end, valor, texto")
     .order("period_start", { ascending: false });
-  if (error) console.error("delivery_metric_values:", error.message);
-  return (data ?? []).map((v) => ({ ...v, valor: nro(v.valor) })) as ValorDelivery[];
+  return exigir({ data, error }, "delivery_metric_values").map((v) => ({
+    ...v,
+    valor: nro(v.valor),
+  })) as ValorDelivery[];
 }
 
 export async function getMotivosDelivery(): Promise<MotivoDelivery[]> {
@@ -134,8 +134,7 @@ export async function getMotivosDelivery(): Promise<MotivoDelivery[]> {
       "delivery_point_id, period_start, period_end, scope, motivo, detalle, producto, cantidad_ordenes",
     )
     .order("cantidad_ordenes", { ascending: false });
-  if (error) console.error("delivery_issues:", error.message);
-  return (data ?? []) as MotivoDelivery[];
+  return exigir({ data, error }, "delivery_issues") as MotivoDelivery[];
 }
 
 /** Los meses con datos, del más nuevo al más viejo, como "YYYY-MM". */

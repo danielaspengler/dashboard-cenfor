@@ -1,10 +1,12 @@
 import { clienteDeLectura } from "@/lib/demo";
+import { exigir } from "@/lib/lectura";
 
 // Consultas del área Operaciones.
 //
 // Todas leen con la sesión de la persona, así que la RLS es la que decide.
 // Si su mail no está en `emails_autorizados`, estas funciones devuelven
-// listas vacías: no hace falta chequear permisos acá además.
+// listas vacías: no hace falta chequear permisos acá además. Una consulta que
+// FALLA, en cambio, corta la pantalla (`exigir`, en `lectura.ts`).
 
 export type Marca = { id: string; slug: string; name: string };
 export type Local = {
@@ -20,7 +22,7 @@ export type Local = {
 
 export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: Local[] }> {
   const supabase = await clienteDeLectura();
-  const [{ data: marcas, error: errorMarcas }, { data: locales, error: errorLocales }] = await Promise.all([
+  const [resMarcas, resLocales] = await Promise.all([
     supabase.from("brands").select("id, slug, name").order("name"),
     supabase
       .from("locations")
@@ -28,12 +30,12 @@ export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: L
       .eq("activo", true)
       .order("name"),
   ]);
-  if (errorMarcas) console.error("brands:", errorMarcas.message);
-  if (errorLocales) console.error("locations:", errorLocales.message);
+  const marcas = exigir(resMarcas, "brands");
+  const locales = exigir(resLocales, "locations");
 
   return {
-    marcas: marcas ?? [],
-    locales: (locales ?? []).map((l) => ({
+    marcas,
+    locales: locales.map((l) => ({
       ...l,
       marca: (l.brands as unknown as { name: string } | null)?.name ?? "",
     })) as Local[],
@@ -48,9 +50,10 @@ export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: L
  */
 export async function getLocalesCerrados(): Promise<{ id: string; name: string }[]> {
   const supabase = await clienteDeLectura();
-  const { data, error } = await supabase.from("locations").select("id, name").eq("activo", false);
-  if (error) console.error("locations cerrados:", error.message);
-  return data ?? [];
+  return exigir(
+    await supabase.from("locations").select("id, name").eq("activo", false),
+    "locations cerrados",
+  );
 }
 
 export type ResenaFila = {
@@ -64,12 +67,14 @@ export type ResenaFila = {
 
 export async function getResenas(limite = 200): Promise<ResenaFila[]> {
   const supabase = await clienteDeLectura();
-  const { data } = await supabase
-    .from("reviews")
-    .select("id, location_id, author, review_date, rating, text")
-    .order("review_date", { ascending: false })
-    .limit(limite);
-  return data ?? [];
+  return exigir(
+    await supabase
+      .from("reviews")
+      .select("id, location_id, author, review_date, rating, text")
+      .order("review_date", { ascending: false })
+      .limit(limite),
+    "reviews",
+  );
 }
 
 export type SnapshotFila = {
@@ -82,13 +87,16 @@ export type SnapshotFila = {
 /** Última foto del acumulado de Google por local. */
 export async function getUltimosSnapshots(): Promise<Map<string, SnapshotFila>> {
   const supabase = await clienteDeLectura();
-  const { data } = await supabase
-    .from("review_snapshots")
-    .select("location_id, scraped_on, reviews_count, total_score")
-    .order("scraped_on", { ascending: false });
+  const data = exigir(
+    await supabase
+      .from("review_snapshots")
+      .select("location_id, scraped_on, reviews_count, total_score")
+      .order("scraped_on", { ascending: false }),
+    "review_snapshots",
+  );
 
   const porLocal = new Map<string, SnapshotFila>();
-  for (const fila of data ?? []) {
+  for (const fila of data) {
     if (!porLocal.has(fila.location_id)) porLocal.set(fila.location_id, fila);
   }
   return porLocal;
@@ -112,13 +120,16 @@ export type VisitaFila = {
 
 export async function getVisitas(): Promise<VisitaFila[]> {
   const supabase = await clienteDeLectura();
-  const { data } = await supabase
-    .from("mystery_shopper_visits")
-    .select(
-      "id, location_id, visit_date, evaluator, experience_type, score_pct, classification, sections, needs_review, observaciones, lo_mejor, a_mejorar",
-    )
-    .order("visit_date", { ascending: false });
-  return (data ?? []) as VisitaFila[];
+  const data = exigir(
+    await supabase
+      .from("mystery_shopper_visits")
+      .select(
+        "id, location_id, visit_date, evaluator, experience_type, score_pct, classification, sections, needs_review, observaciones, lo_mejor, a_mejorar",
+      )
+      .order("visit_date", { ascending: false }),
+    "mystery_shopper_visits",
+  );
+  return data as VisitaFila[];
 }
 
 /** El desglose por dimensión que trae la tabla de resultados de la planilla. */
@@ -142,12 +153,13 @@ export type AuditoriaFila = {
 
 export async function getAuditorias(): Promise<AuditoriaFila[]> {
   const supabase = await clienteDeLectura();
-  const { data, error } = await supabase
-    .from("audits")
-    .select("id, location_id, audit_date, auditor, score_pct, categories, source_sheet")
-    .order("audit_date", { ascending: false });
-  if (error) console.error("audits:", error.message);
-  return data ?? [];
+  return exigir(
+    await supabase
+      .from("audits")
+      .select("id, location_id, audit_date, auditor, score_pct, categories, source_sheet")
+      .order("audit_date", { ascending: false }),
+    "audits",
+  );
 }
 
 /**

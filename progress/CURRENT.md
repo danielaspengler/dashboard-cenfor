@@ -397,15 +397,14 @@ nosotros más adelante (`src/lib/marca.ts`, feature C11).
 - ~~`GraficoLinea` con 20 meses~~ — arreglado el 25/09/2026: rótulos de mes cada `paso` (el
   último y el elegido siempre se ven), sin el rótulo «planilla nueva» (decisión de Daniela) y la
   escala de auditorías de 55 a 100 con guías en 55/70/85.
-- **Una consulta vuelve vacía, intermitente.** Tres veces, siempre con `next start` recién
-  levantado después de un build: 0 auditorías en MS y Auditorías (revisor de C17), 0 auditorías
-  en el Resumen (28/09) y 0 locales en el Resumen administrativo —«local sin nombre» en todo—
-  (28/09). Cada vez falla UNA consulta y las demás de la misma pantalla andan: huele a corte de
-  red transitorio contra Supabase, no a un bug de lógica. No se reprodujo en 6 reinicios con el
-  log prendido. Desde el 28/09 `getMarcasYLocales`, `getAuditorias` y `getLocalesCerrados`
-  loguean el error. **Problema de fondo:** una consulta caída se dibuja como «sin dato», que es
-  una afirmación falsa. Si vuelve, conviene que la pantalla diga «no se pudo leer» (o reintentar
-  una vez) en lugar de mostrar vacíos.
+- **Consultas que volvían vacías — resuelto el 28/09/2026.** Tres veces una pantalla se dibujó con
+  una consulta vacía (0 auditorías, 0 locales) por un corte de red momentáneo contra Supabase, y
+  la pantalla lo mostraba como «sin dato»: una afirmación falsa. Ahora: (1) los dos clientes de
+  Supabase reintentan una vez las lecturas GET que fallan por red o 5xx
+  (`src/lib/supabase/reintento.ts`; los POST no, para no duplicar escrituras del sync); (2) las
+  12 consultas de las pantallas pasan por `exigir()` (`src/lib/lectura.ts`): si fallan dos veces,
+  la pantalla muestra «No se pudieron leer los datos» con un botón para reintentar
+  (`(panel)/error.tsx`). Una tabla que la RLS deja vacía NO es error y sigue su camino.
 
 **Para avisar al cliente (auditorías, C17):** en la hoja `Puntaje auditorias` del Looker hay una
 fecha 26/12/2026 que es 2025, y dos auditorías de Nueva Córdoba el 28/02/2025 (una es de marzo).

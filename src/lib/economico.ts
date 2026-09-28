@@ -1,4 +1,5 @@
 import { clienteDeLectura } from "@/lib/demo";
+import { exigir } from "@/lib/lectura";
 
 // ─────────────────────────────────────────────────────────────────────────
 // RESUMEN ADMINISTRATIVO
@@ -51,11 +52,7 @@ export async function getFinancieros(): Promise<FilaFinanciera[]> {
       "location_id, period_start, ventas, ordenes, ticket_promedio, cmv, rentabilidad_neta_pct, costos_fijos, costos_variables, compras_ventas_pct, costos_fijos_pct, costos_variables_pct, tipo_local",
     )
     .order("period_start", { ascending: false });
-  // Una consulta que falla devuelve `data` en null y la pantalla se dibuja
-  // vacía sin decir nada. Al menos que quede en el log del servidor.
-  if (error) console.error("financials:", error.message);
-
-  return (data ?? []).map((f) => ({
+  return exigir({ data, error }, "financials").map((f) => ({
     ...f,
     ventas: nro(f.ventas),
     ordenes: nro(f.ordenes),
