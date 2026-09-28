@@ -13,13 +13,54 @@
   --color-grafito: #55544e;
   /* Fondo de los encabezados de tabla, un tono más marcado que el hueso del
      cuerpo para que la fila de títulos se despegue de los datos. */
-  --color-nube: #f1efeb;
+  --color-nube: #efe6d6;
+  /* El fondo de la página es gris y las tarjetas beige: cada bloque de datos
+     se despega del fondo sin necesitar sombra. */
+  --color-fondo: #ebebe9;
+  --color-tarjeta: #f8f3ea;
+  --color-tarjeta-borde: #e4d9c6;
 }
 
 body {
-  background: var(--color-hueso);
+  background: var(--color-fondo);
   color: var(--color-tinta);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* TÍTULOS
+   Una sola regla para los tres niveles: tinta, barra a la izquierda, y el
+   tamaño y el grosor de la barra bajan con el nivel. Así se distinguen entre
+   sí sin sumar colores, y cualquier título nuevo se ve como los demás. */
+@layer components {
+  .titulo-pagina {
+    border-left: 4px solid var(--color-tinta);
+    padding-left: 0.75rem;
+    font-size: 1.625rem;
+    line-height: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-tinta);
+  }
+
+  .titulo-seccion {
+    border-left: 3px solid var(--color-tinta);
+    padding-left: 0.625rem;
+    font-size: 1.0625rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+    color: var(--color-tinta);
+  }
+
+  .titulo-tarjeta {
+    border-left: 2px solid var(--color-grafito);
+    padding-left: 0.5rem;
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-grafito);
+  }
 }
 
 /* IMPRESIÓN
@@ -32,6 +73,13 @@ body {
   @page {
     size: A4;
     margin: 14mm 12mm;
+  }
+
+  /* En papel el gris del fondo y el beige de las tarjetas gastan tinta. */
+  :root {
+    --color-fondo: #fff;
+    --color-tarjeta: #fff;
+    --color-tarjeta-borde: #e5e3df;
   }
 
   body {

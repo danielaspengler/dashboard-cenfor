@@ -17,7 +17,7 @@ export default function PlanAccionPage() {
       />
 
       <div className="p-7">
-        <div className="max-w-2xl rounded-xl border border-dashed border-[var(--color-borde)] bg-white p-7">
+        <div className="max-w-2xl rounded-xl border border-dashed border-[var(--color-tarjeta-borde)] bg-[var(--color-tarjeta)] p-7">
           <h2 className="text-sm font-medium">Qué va a ir acá</h2>
           <p className="mt-2 text-sm text-[var(--color-piedra)]">
             El seguimiento de lo que hay que corregir en cada local: de dónde sale el problema,

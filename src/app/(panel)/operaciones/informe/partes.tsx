@@ -13,7 +13,7 @@ export function Bloque({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+        <h2 className="titulo-seccion">
           {titulo}
         </h2>
         {bajada && <p className="mt-1 pl-3 text-xs text-[var(--color-piedra)]">{bajada}</p>}

@@ -7,7 +7,7 @@
 > archivo (estado). El detalle rico de todo lo construido antes del arnés está en
 > `../../memory.md` y `../HANDOFF.md`.
 
-**Última actualización:** 2026-09-25
+**Última actualización:** 2026-09-28
 **Feature activa:** ninguna. C17 (histórico de auditorías) cerrada el 25/09/2026: los datos ya
 están en la base y el código se publicó el mismo día (commit 53409b1).
 **Lo primero que conviene abrir:** los pendientes con el cliente (umbrales de delivery, Woops,
@@ -30,6 +30,22 @@ Compras/ventas) o la paleta propia (C11).
 Datos cargados: 29 reseñas · 9 snapshots · 8 visitas de MS · 120 auditorías (ene 2025 – ago 2026) · 884 valores de
 indicadores de delivery (julio y agosto 2026, tres canales) · 225 filas de motivos · 46 puntos
 de venta sobre 10 locales.
+
+---
+
+## Filtro por año y la nueva jerarquía visual (28/09/2026)
+
+**El filtro de fecha tiene botones de año.** Pedido de Daniela: la lista de ene 2025 a sep 2026 era
+larga. Ahora es `[Todo] [2025] [2026]` + un desplegable con los meses de ese año. El año es un
+**atajo para encontrar el mes, no un período** (decidido por Daniela): apretarlo no cambia ningún
+número. Con un solo año cargado no hay botones de año. Mismo componente (`FiltroMeses`) en las
+seis pantallas.
+
+**Fondo gris, tarjetas beige, tres niveles de título con una sola regla.** Tokens nuevos en
+`globals.css`: `--color-fondo` (#ebebe9), `--color-tarjeta` (#f8f3ea), `--color-tarjeta-borde`.
+Los títulos son tres clases —`titulo-pagina`, `titulo-seccion`, `titulo-tarjeta`— con barra a la
+izquierda que afina con el nivel. Los 11 títulos de sección que estaban copiados a mano usan la
+clase. Al imprimir, fondo y tarjetas vuelven a blanco. Es una paleta provisoria: C11 sigue abierta.
 
 ---
 
@@ -375,8 +391,10 @@ nosotros más adelante (`src/lib/marca.ts`, feature C11).
 - ~~`GraficoLinea` con 20 meses~~ — arreglado el 25/09/2026: rótulos de mes cada `paso` (el
   último y el elegido siempre se ven), sin el rótulo «planilla nueva» (decisión de Daniela) y la
   escala de auditorías de 55 a 100 con guías en 55/70/85.
-- Un render de MS y Auditorías salió una vez con 0 auditorías y no se pudo reproducir. Desde C17
-  `getAuditorias` loguea el error de la consulta: si vuelve a pasar, queda en el log del server.
+- **Render con 0 auditorías, intermitente.** Pasó dos veces (revisor de C17 en MS y Auditorías, y
+  el 28/09 en el Resumen), las dos en la primera carga después de levantar `next start`. No se
+  reprodujo con el log prendido. `getAuditorias` loguea el error: si vuelve, mirar el log del
+  server (o el de Vercel) antes de tocar código.
 
 **Para avisar al cliente (auditorías, C17):** en la hoja `Puntaje auditorias` del Looker hay una
 fecha 26/12/2026 que es 2025, y dos auditorías de Nueva Córdoba el 28/02/2025 (una es de marzo).

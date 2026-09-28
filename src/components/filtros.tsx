@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LOCAL_TODOS, MES_TODO, etiquetaMes } from "@/lib/filtros";
 
@@ -92,11 +93,11 @@ function useCambiarParam() {
  * `conTodo` en false lo usa Delivery: lo que publican las apps son cierres
  * mensuales, y "Todo" tendría que promediar agosto con julio.
  *
- * Es un desplegable siempre, incluso con dos meses cargados. Antes eran botones
- * hasta seis meses y `select` de ahí en adelante: el control cambiaba de forma
- * solo, y en un tablero que acumula un mes por mes esa forma dura poco. Con el
- * desplegable el filtro se ve igual desde la primera corrida hasta la número
- * treinta, y ocupa lo mismo al lado del canal y el local.
+ * Botones de año y un desplegable con los meses de ese año. Con veinte meses
+ * cargados, una sola lista de ene 2025 a sep 2026 era larga de recorrer. El año
+ * es un atajo para encontrar el mes, NO un período: apretarlo no cambia los
+ * números, solo qué meses ofrece la lista (decisión de Daniela, 28/09/2026).
+ * Con un solo año cargado no hay botones de año.
  */
 export function FiltroMeses({
   actual,
@@ -108,29 +109,70 @@ export function FiltroMeses({
   conTodo?: boolean;
 }) {
   const cambiar = useCambiarParam();
-  const opciones = conTodo ? [MES_TODO, ...meses] : meses;
+  // El año que se apretó y todavía no tiene mes elegido. Mientras es null, el
+  // año visible es el del mes de la URL.
+  const [anioElegido, setAnioElegido] = useState<string | null>(null);
+
   // Un solo mes y sin "Todo" no es una elección: no se dibuja el control.
-  if (opciones.length <= 1) return null;
+  if ((conTodo ? meses.length + 1 : meses.length) <= 1) return null;
 
   // El default no se escribe en la URL: sin parámetros y con el default puesto
   // tienen que ser la misma dirección.
   const porDefecto = conTodo ? MES_TODO : meses[0];
+  const anios = [...new Set(meses.map((m) => m.slice(0, 4)))].sort();
+  const anioVisto =
+    anioElegido ??
+    (actual !== MES_TODO ? actual.slice(0, 4) : anios.length === 1 ? anios[0] : null);
+  const delAnio = meses.filter((m) => m.startsWith(anioVisto ?? "-")).sort();
+  const enTodo = actual === MES_TODO && anioElegido === null;
 
+  const elegirMes = (m: string) => {
+    setAnioElegido(null);
+    cambiar("mes", m, m === porDefecto);
+  };
+
+  // Un div y no el `label` de `Desplegable`: un label con botones adentro
+  // manda el clic de su rótulo al primero, que es "Todo".
   return (
-    <Desplegable rotulo="Fecha">
-      <select
-        value={actual}
-        onChange={(e) => cambiar("mes", e.target.value, e.target.value === porDefecto)}
-        aria-label="Fecha"
-        className={CLASE_SELECT}
-      >
-        {opciones.map((m) => (
-          <option key={m} value={m}>
-            {etiquetaMes(m)}
-          </option>
-        ))}
-      </select>
-    </Desplegable>
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
+        Fecha
+      </span>
+      {(conTodo || anios.length > 1) && (
+        <Grupo>
+          {conTodo && (
+            <Boton activo={enTodo} onClick={() => elegirMes(MES_TODO)}>
+              Todo
+            </Boton>
+          )}
+          {anios.length > 1 &&
+            anios.map((a) => (
+              <Boton key={a} activo={!enTodo && anioVisto === a} onClick={() => setAnioElegido(a)}>
+                {a}
+              </Boton>
+            ))}
+        </Grupo>
+      )}
+      {anioVisto && (
+        <select
+          value={delAnio.includes(actual) ? actual : ""}
+          onChange={(e) => elegirMes(e.target.value)}
+          aria-label="Mes"
+          className={CLASE_SELECT}
+        >
+          {!delAnio.includes(actual) && (
+            <option value="" disabled>
+              Elegí un mes
+            </option>
+          )}
+          {delAnio.map((m) => (
+            <option key={m} value={m}>
+              {etiquetaMes(m).split(" ")[0]}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
   );
 }
 

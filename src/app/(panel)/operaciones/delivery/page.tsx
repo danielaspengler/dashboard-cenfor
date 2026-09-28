@@ -242,7 +242,7 @@ export default async function DeliveryPage({
         <p className="text-xs text-[var(--color-piedra)]">{notaDeLaCuenta(defs)}</p>
 
         <section>
-          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+          <h2 className="mb-1 titulo-seccion">
             Puntos de venta
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
@@ -309,7 +309,7 @@ export default async function DeliveryPage({
             la sección no aparece vacía: no aparece. */}
         {motivosDelMes.length > 0 && (
           <section>
-            <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+            <h2 className="mb-1 titulo-seccion">
               Motivos de reclamo
             </h2>
             <p className="mb-3 text-xs text-[var(--color-piedra)]">

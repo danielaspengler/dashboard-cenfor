@@ -16,7 +16,7 @@ export const metadata = {
 function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h2 className="border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+      <h2 className="titulo-seccion">
         {titulo}
       </h2>
       <div className="space-y-2 text-sm leading-relaxed text-[var(--color-tinta)]">{children}</div>

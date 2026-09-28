@@ -9,17 +9,14 @@ export function PageHeader({
   bajada?: string;
   extra?: React.ReactNode;
 }) {
-  // La franja del título se despega del cuerpo: fondo blanco sobre el hueso de
-  // la página, borde inferior de 2px y una barra de acento a la izquierda del
-  // título. Es la única zona de la pantalla que dice dónde estás.
+  // La franja del título se despega del cuerpo: fondo blanco sobre el gris de
+  // la página y borde inferior de 2px. Es la única zona de la pantalla que dice
+  // dónde estás.
   return (
     <header className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--color-tinta)] bg-white px-7 py-6">
-      <div className="flex items-start gap-3">
-        <span className="mt-1 h-7 w-1 shrink-0 rounded-full bg-[var(--color-tinta)]" />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
-          {bajada && <p className="mt-0.5 text-sm text-[var(--color-piedra)]">{bajada}</p>}
-        </div>
+      <div>
+        <h1 className="titulo-pagina">{titulo}</h1>
+        {bajada && <p className="mt-1 pl-4 text-sm text-[var(--color-piedra)]">{bajada}</p>}
       </div>
       {extra}
     </header>
@@ -28,7 +25,7 @@ export function PageHeader({
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border-2 border-[var(--color-borde)] bg-white p-5 ${className}`}>
+    <div className={`rounded-xl border-2 border-[var(--color-tarjeta-borde)] bg-[var(--color-tarjeta)] p-5 ${className}`}>
       {children}
     </div>
   );
@@ -47,9 +44,7 @@ export function Dato({
 }) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
-        {etiqueta}
-      </div>
+      <div className="titulo-tarjeta">{etiqueta}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums" style={color ? { color } : undefined}>
         {valor}
       </div>
@@ -133,7 +128,7 @@ export function EnRevision() {
 
 export function Tabla({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border-2 border-[var(--color-borde)] bg-white">
+    <div className="overflow-x-auto rounded-xl border-2 border-[var(--color-tarjeta-borde)] bg-[var(--color-tarjeta)]">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   );

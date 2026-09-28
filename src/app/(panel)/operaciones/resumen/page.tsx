@@ -222,7 +222,7 @@ export default async function ResumenPage({
         </div>
 
         <section>
-          <h2 className="mb-3 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+          <h2 className="mb-3 titulo-seccion">
             Detalle por local
           </h2>
           <Tabla>

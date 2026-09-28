@@ -140,7 +140,7 @@ export default async function MsAuditoriasPage({
         </div>
 
         <section>
-          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+          <h2 className="mb-1 titulo-seccion">
             Visitas de mystery shopper
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
@@ -200,7 +200,7 @@ export default async function MsAuditoriasPage({
         </section>
 
         <section>
-          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+          <h2 className="mb-1 titulo-seccion">
             Auditorías presenciales
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
@@ -278,7 +278,7 @@ export default async function MsAuditoriasPage({
         </section>
 
         <section>
-          <h2 className="mb-1 border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]">
+          <h2 className="mb-1 titulo-seccion">
             Evolución del puntaje de auditoría
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">

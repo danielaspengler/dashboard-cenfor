@@ -200,7 +200,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
     return (
       <div
         key={fila.punto.id}
-        className="break-inside-avoid rounded-xl border-2 border-[var(--color-borde)] p-4"
+        className="break-inside-avoid rounded-xl border-2 border-[var(--color-tarjeta-borde)] bg-[var(--color-tarjeta)] p-4"
       >
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <span className="text-sm font-medium">{fila.punto.name}</span>
@@ -393,7 +393,7 @@ export default async function InformePage({ searchParams }: { searchParams: Prom
                         .map((c) => (
                           <div
                             key={c.titulo}
-                            className="break-inside-avoid rounded-xl border-2 border-[var(--color-borde)] p-4"
+                            className="break-inside-avoid rounded-xl border-2 border-[var(--color-tarjeta-borde)] bg-[var(--color-tarjeta)] p-4"
                           >
                             <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-grafito)]">
                               {c.titulo}

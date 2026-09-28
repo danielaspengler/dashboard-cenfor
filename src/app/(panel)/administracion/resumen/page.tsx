@@ -63,7 +63,7 @@ const PORCENTAJES: TarjetaDef[] = [
 ];
 
 const CLASE_TITULO =
-  "border-l-2 border-[var(--color-tinta)] pl-2.5 text-sm font-semibold uppercase tracking-wide text-[var(--color-grafito)]";
+  "titulo-seccion";
 
 /** "General Paz y Poeta Lugones". Copia de la del informe: son cuatro líneas. */
 function enumerar(partes: string[]): string {
