@@ -159,13 +159,9 @@ export default async function MsAuditoriasPage({
         </div>
 
         <section>
-          <h2 className="mb-1 titulo-seccion">
+          <h2 className="mb-3 titulo-seccion">
             Visitas de mystery shopper
           </h2>
-          <p className="mb-3 text-xs text-[var(--color-piedra)]">
-            El formulario tiene dos experiencias, take away y delivery, y las dos se listan acá.
-            La sección Delivery muestra otra cosa: los indicadores que publican las apps.
-          </p>
           <Tabla>
             <thead>
               <tr>

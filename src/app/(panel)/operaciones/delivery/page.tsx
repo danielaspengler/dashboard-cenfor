@@ -11,7 +11,6 @@ import {
   mesesConDatos,
   valorDe,
   type FilaPunto,
-  type IndicadorDef,
   type MotivoDelivery,
 } from "@/lib/delivery";
 import { CANALES } from "@/lib/sync/fuentes";
@@ -52,34 +51,6 @@ function agrupar(motivos: MotivoDelivery[]) {
 function leerCanal(valor: string | string[] | undefined): string {
   const v = Array.isArray(valor) ? valor[0] : valor;
   return CANALES.some((c) => c.id === v) ? (v as string) : CANALES[0].id;
-}
-
-/**
- * Cómo está hecha la cuenta de este canal, dicho en la pantalla.
- *
- * Las tres apps permiten cuentas distintas y esconderlo haría comparables
- * números que no lo son. Sale del catálogo: si mañana una app empieza a
- * publicar la cantidad de evaluaciones, la nota cambia sola.
- */
-function notaDeLaCuenta(defs: IndicadorDef[]): string {
-  const ponderados = defs.filter((d) => d.pondera_con && d.destacado);
-  const promediados = defs.filter(
-    (d) => !d.pondera_con && d.destacado && (d.unidad === "pct" || d.unidad === "minutos"),
-  );
-  const partes: string[] = [];
-  if (ponderados.length) {
-    const nombres = ponderados.map((d) => d.nombre.toLowerCase()).join(" y ");
-    partes.push(`La ${nombres} va ponderada por la cantidad de evaluaciones.`);
-  }
-  if (promediados.length) {
-    partes.push(
-      `Los porcentajes y tiempos son promedio simple de los puntos de venta: esta app no publica el total de pedidos de cada uno, así que no hay con qué ponderarlos.`,
-    );
-  }
-  partes.push(
-    "CENFOR todavía no definió umbrales para delivery, por eso ningún número está pintado de verde o rojo.",
-  );
-  return partes.join(" ");
 }
 
 export default async function DeliveryPage({
@@ -238,8 +209,6 @@ export default async function DeliveryPage({
             );
           })}
         </div>
-
-        <p className="text-xs text-[var(--color-piedra)]">{notaDeLaCuenta(defs)}</p>
 
         <section>
           <h2 className="mb-1 titulo-seccion">
