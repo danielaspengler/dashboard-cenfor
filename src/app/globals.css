@@ -19,6 +19,12 @@
   --color-fondo: #ebebe9;
   --color-tarjeta: #f8f3ea;
   --color-tarjeta-borde: #e4d9c6;
+  /* Series de los gráficos: el verde de la fábrica de la propuesta de
+     identidad (#005A50) aclarado un paso —el original en barras se lee casi
+     negro— y la mostaza de la misma propuesta, oscurecida para leerse sobre
+     el beige. Validados de a par: contraste y daltonismo (28/09/2026). */
+  --color-serie-1: #00806f;
+  --color-serie-2: #c28a2c;
 }
 
 body {

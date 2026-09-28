@@ -2,9 +2,11 @@ import { etiquetaMes } from "@/lib/filtros";
 
 // Los gráficos del tablero: SVG escrito a mano, de servidor, sin librerías.
 //
-// Colores solo de `globals.css`: tinta y piedra para las series, borde para las
-// guías, nube para el mes elegido. Nada de verde, rojo ni colores de marca: un
-// color en un número económico se leería como un criterio que CENFOR no dio.
+// Colores solo de `globals.css`: serie-1 y serie-2 para las series, borde para
+// las guías, nube para el mes elegido. Los rótulos van en tinta, nunca en el
+// color de la serie. Nada de rojo, del verde del semáforo ni de los colores de
+// las marcas: un color así en un número económico se leería como un criterio
+// que CENFOR no dio.
 //
 // Un `null` es un mes sin dato: queda el hueco, nunca una barra en cero.
 
@@ -15,7 +17,7 @@ type Marco = { ancho: number; alto: number; izq: number; n: number };
 const ARRIBA = 18;
 const ABAJO = 22;
 const DER = 8;
-const CLASE_SERIE = ["fill-[var(--color-tinta)]", "fill-[var(--color-piedra)]"];
+const CLASE_SERIE = ["fill-[var(--color-serie-1)]", "fill-[var(--color-serie-2)]"];
 
 const alturaUtil = (m: Marco) => m.alto - ARRIBA - ABAJO;
 const anchoColumna = (m: Marco) => (m.ancho - m.izq - DER) / m.n;
@@ -187,7 +189,7 @@ export function GraficoBarras({
   series,
   formato,
   marcado,
-  alto = 220,
+  alto = 200,
 }: {
   titulo: string;
   meses: string[];
@@ -271,7 +273,7 @@ function Punto({
     );
   return (
     <g>
-      <circle cx={cx} cy={y(valor)} r={3.5} className="fill-[var(--color-tinta)]">
+      <circle cx={cx} cy={y(valor)} r={3.5} className="fill-[var(--color-serie-1)]">
         <title>{tooltip}</title>
       </circle>
       {rotulo !== null && (
@@ -355,7 +357,7 @@ function Linea({
   x: (i: number) => number;
   y: (v: number) => number;
 }) {
-  const clase = "stroke-[var(--color-tinta)]";
+  const clase = "stroke-[var(--color-serie-1)]";
   if (iCorte <= 0)
     return <path d={tramos(valores, x, y)} fill="none" strokeWidth={2} className={clase} />;
   const parte = (dentro: (i: number) => boolean) =>
@@ -383,6 +385,10 @@ function Linea({
  *
  * `corte` marca un cambio de vara a mitad de la serie. Sin él, el gráfico se
  * dibuja exactamente como antes.
+ *
+ * `ancho` es el del lienzo, no el de la pantalla: el SVG se estira al ancho
+ * de su caja y la altura acompaña. Un gráfico que ocupa todo el ancho de la
+ * página pide un lienzo más ancho para no quedar alto como una pared.
  */
 export function GraficoLinea({
   titulo,
@@ -394,6 +400,7 @@ export function GraficoLinea({
   corte,
   alto = 160,
   chico = false,
+  ancho,
 }: {
   titulo: string;
   meses: string[];
@@ -404,9 +411,10 @@ export function GraficoLinea({
   corte?: CorteSerie;
   alto?: number;
   chico?: boolean;
+  ancho?: number;
 }) {
   if (!hayDatos(valores)) return <SinDatoGrafico />;
-  const marco: Marco = { ancho: chico ? 360 : 640, alto, izq: chico ? 48 : 64, n: Math.max(meses.length, 1) };
+  const marco: Marco = { ancho: ancho ?? (chico ? 360 : 640), alto, izq: chico ? 48 : 64, n: Math.max(meses.length, 1) };
   const [min, max] = dominio ?? extremos(valores);
   const y = (v: number) => ARRIBA + ((max - v) / (max - min)) * alturaUtil(marco);
   const x = (i: number) => centro(marco, i);

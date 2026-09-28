@@ -20,7 +20,7 @@ export type Local = {
 
 export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: Local[] }> {
   const supabase = await clienteDeLectura();
-  const [{ data: marcas }, { data: locales }] = await Promise.all([
+  const [{ data: marcas, error: errorMarcas }, { data: locales, error: errorLocales }] = await Promise.all([
     supabase.from("brands").select("id, slug, name").order("name"),
     supabase
       .from("locations")
@@ -28,6 +28,8 @@ export async function getMarcasYLocales(): Promise<{ marcas: Marca[]; locales: L
       .eq("activo", true)
       .order("name"),
   ]);
+  if (errorMarcas) console.error("brands:", errorMarcas.message);
+  if (errorLocales) console.error("locations:", errorLocales.message);
 
   return {
     marcas: marcas ?? [],

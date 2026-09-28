@@ -296,6 +296,7 @@ export default async function MsAuditoriasPage({
                 formato={(v) => `${v.toFixed(1)}%`}
                 marcado={mes}
                 dominio={dominioAuditorias(serie.valores)}
+                ancho={960}
                 corte={{
                   mes: MES_CORTE,
                   antes: "medido con la planilla anterior",

@@ -189,10 +189,16 @@ function Evolucion({
   return (
     <>
       <Bloque titulo="Ventas y ticket promedio" sinDato={sinDatoDe(meses, [ventas, ticket])}>
-        <h3 className={rotulo}>Ventas</h3>
-        <GraficoBarras titulo="Ventas por mes" meses={meses} series={[ventas]} formato={pesosCorto} marcado={mes} />
-        <h3 className={`${rotulo} mt-4`}>Ticket promedio</h3>
-        <GraficoLinea titulo="Ticket promedio por mes" meses={meses} valores={ticket.valores} formato={pesosLargo} marcado={mes} />
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div>
+            <h3 className={rotulo}>Ventas</h3>
+            <GraficoBarras titulo="Ventas por mes" meses={meses} series={[ventas]} formato={pesosCorto} marcado={mes} />
+          </div>
+          <div>
+            <h3 className={rotulo}>Ticket promedio</h3>
+            <GraficoLinea titulo="Ticket promedio por mes" meses={meses} valores={ticket.valores} formato={pesosLargo} marcado={mes} alto={200} />
+          </div>
+        </div>
       </Bloque>
       <div className="grid gap-8 lg:grid-cols-2">
         <Bloque titulo="Costos fijos y variables" extra={<Leyenda series={costos} />} sinDato={sinDatoDe(meses, costos)}>
@@ -257,6 +263,7 @@ function RentabilidadPorLocal({
                 dominio={dominio}
                 chico={chico}
                 alto={chico ? 180 : 160}
+                ancho={chico ? undefined : 960}
               />
               {faltan && <p className="mt-1 text-xs text-[var(--color-piedra)]">Sin dato: {faltan}.</p>}
             </Card>

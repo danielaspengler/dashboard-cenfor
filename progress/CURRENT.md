@@ -47,6 +47,12 @@ Los títulos son tres clases —`titulo-pagina`, `titulo-seccion`, `titulo-tarje
 izquierda que afina con el nivel. Los 11 títulos de sección que estaban copiados a mano usan la
 clase. Al imprimir, fondo y tarjetas vuelven a blanco. Es una paleta provisoria: C11 sigue abierta.
 
+**Gráficos en verde y mostaza, más chicos (28/09/2026).** Series en `--color-serie-1` (#00806f,
+el verde de la fábrica de la propuesta de identidad aclarado un paso) y `--color-serie-2`
+(#c28a2c, la mostaza oscurecida); par validado con el script de dataviz sobre el beige. Ventas y
+Ticket lado a lado; los gráficos a todo el ancho usan `ancho={960}` para no quedar altos; barras
+de 220 a 200 de alto.
+
 ---
 
 ## El histórico de auditorías está en la base (C17, 25/09/2026)
@@ -391,10 +397,15 @@ nosotros más adelante (`src/lib/marca.ts`, feature C11).
 - ~~`GraficoLinea` con 20 meses~~ — arreglado el 25/09/2026: rótulos de mes cada `paso` (el
   último y el elegido siempre se ven), sin el rótulo «planilla nueva» (decisión de Daniela) y la
   escala de auditorías de 55 a 100 con guías en 55/70/85.
-- **Render con 0 auditorías, intermitente.** Pasó dos veces (revisor de C17 en MS y Auditorías, y
-  el 28/09 en el Resumen), las dos en la primera carga después de levantar `next start`. No se
-  reprodujo con el log prendido. `getAuditorias` loguea el error: si vuelve, mirar el log del
-  server (o el de Vercel) antes de tocar código.
+- **Una consulta vuelve vacía, intermitente.** Tres veces, siempre con `next start` recién
+  levantado después de un build: 0 auditorías en MS y Auditorías (revisor de C17), 0 auditorías
+  en el Resumen (28/09) y 0 locales en el Resumen administrativo —«local sin nombre» en todo—
+  (28/09). Cada vez falla UNA consulta y las demás de la misma pantalla andan: huele a corte de
+  red transitorio contra Supabase, no a un bug de lógica. No se reprodujo en 6 reinicios con el
+  log prendido. Desde el 28/09 `getMarcasYLocales`, `getAuditorias` y `getLocalesCerrados`
+  loguean el error. **Problema de fondo:** una consulta caída se dibuja como «sin dato», que es
+  una afirmación falsa. Si vuelve, conviene que la pantalla diga «no se pudo leer» (o reintentar
+  una vez) en lugar de mostrar vacíos.
 
 **Para avisar al cliente (auditorías, C17):** en la hoja `Puntaje auditorias` del Looker hay una
 fecha 26/12/2026 que es 2025, y dos auditorías de Nueva Córdoba el 28/02/2025 (una es de marzo).
