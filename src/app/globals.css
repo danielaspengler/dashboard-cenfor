@@ -40,7 +40,7 @@ body {
 }
 
 /* TÍTULOS
-   Una sola regla para los tres niveles: tinta, barra a la izquierda, y el
+   Una sola regla para los cuatro niveles: tinta, barra a la izquierda, y el
    tamaño y el grosor de la barra bajan con el nivel. Así se distinguen entre
    sí sin sumar colores, y cualquier título nuevo se ve como los demás. */
 @layer components {
@@ -59,6 +59,17 @@ body {
     padding-left: 0.625rem;
     font-size: 1.0625rem;
     line-height: 1.5rem;
+    font-weight: 600;
+    color: var(--color-tinta);
+  }
+
+  /* Un bloque dentro de una sección: el gráfico de ventas dentro de
+     «Evolución». */
+  .titulo-subseccion {
+    border-left: 2px solid var(--color-tinta);
+    padding-left: 0.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
     font-weight: 600;
     color: var(--color-tinta);
   }

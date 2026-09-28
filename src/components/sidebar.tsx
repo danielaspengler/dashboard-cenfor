@@ -21,7 +21,9 @@ export function Sidebar({ email }: { email: string | null }) {
   }
 
   return (
-    <nav className="flex w-60 shrink-0 flex-col bg-[var(--color-menu)] text-[var(--color-menu-texto)]">
+    // Fijo a la altura de la ventana: si se estira con la página, el pie con el
+    // mail y «Cerrar sesión» queda al final de todo el scroll y nadie lo ve.
+    <nav className="sticky top-0 flex h-screen w-60 shrink-0 flex-col bg-[var(--color-menu)] text-[var(--color-menu-texto)]">
       <div className="border-b border-[var(--color-menu-linea)] px-5 py-4">
         <div className="text-lg font-semibold tracking-tight">{MARCA.nombre}</div>
         <div className="text-xs text-[var(--color-menu-tenue)]">{MARCA.bajada}</div>

@@ -6,7 +6,7 @@
 
 export const MARCA = {
   nombre: "CENFOR",
-  bajada: "Control operativo",
+  bajada: "Control Operativo y Franquicias",
   // Las dos marcas del grupo. Amarillo y rojo, elegidos por Daniela el
   // 09/09/2026. Los tonos son los oscuros de cada color y no los plenos:
   // el punto se dibuja sobre blanco y un amarillo pleno no se ve.

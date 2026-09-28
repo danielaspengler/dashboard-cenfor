@@ -62,8 +62,8 @@ const PORCENTAJES: TarjetaDef[] = [
   { indicador: "rentabilidad_neta_pct", etiqueta: "Rentabilidad neta", formato: pct, enPuntos: true },
 ];
 
-const CLASE_TITULO =
-  "titulo-seccion";
+const CLASE_TITULO = "titulo-seccion";
+const CLASE_SUBTITULO = "titulo-subseccion";
 
 /** "General Paz y Poeta Lugones". Copia de la del informe: son cuatro líneas. */
 function enumerar(partes: string[]): string {
@@ -155,7 +155,7 @@ function Bloque({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className={CLASE_TITULO}>{titulo}</h2>
+        <h3 className={CLASE_SUBTITULO}>{titulo}</h3>
         {extra}
       </div>
       <Card>{children}</Card>
@@ -244,7 +244,7 @@ function RentabilidadPorLocal({
 
   return (
     <section>
-      <h2 className={`${CLASE_TITULO} mb-3`}>Rentabilidad neta por local</h2>
+      <h3 className={`${CLASE_SUBTITULO} mb-3`}>Rentabilidad neta por local</h3>
       <div className={chico ? "grid gap-4 md:grid-cols-2 xl:grid-cols-3" : ""}>
         {series.map((s) => {
           // Por `sinDatoDe` y no por `mesesSinDato` directo: es la misma regla
@@ -424,19 +424,25 @@ function Cuerpo({
   mes: string;
 }) {
   return (
-    <div className="space-y-8 p-7">
-      <LineaDeContexto titulo={titulo} ctx={ctx} sinDatos={sinDatos} />
-      <div className="grid gap-5 md:grid-cols-3">
-        {VOLUMEN.map((d) => <Tarjeta key={d.indicador} def={d} ctx={ctx} />)}
-      </div>
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {PORCENTAJES.map((d) => <Tarjeta key={d.indicador} def={d} ctx={ctx} />)}
-      </div>
-      <p className="text-xs text-[var(--color-piedra)]">
-        Porcentajes ponderados por las ventas de cada local, solo del mes elegido. No coinciden con el
-        Looker «{LOOKER_ECONOMICO}», que promedia los locales sin ponderar y mezcla períodos.
-      </p>
-      <Evolucion filas={visibles} mes={mes} nombre={ctx.nombre} />
+    <div className="space-y-10 p-7">
+      <section className="space-y-5">
+        <h2 className={CLASE_TITULO}>Resumen</h2>
+        <LineaDeContexto titulo={titulo} ctx={ctx} sinDatos={sinDatos} />
+        <div className="grid gap-5 md:grid-cols-3">
+          {VOLUMEN.map((d) => <Tarjeta key={d.indicador} def={d} ctx={ctx} />)}
+        </div>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {PORCENTAJES.map((d) => <Tarjeta key={d.indicador} def={d} ctx={ctx} />)}
+        </div>
+        <p className="text-xs text-[var(--color-piedra)]">
+          Porcentajes ponderados por las ventas de cada local, solo del mes elegido. No coinciden con el
+          Looker «{LOOKER_ECONOMICO}», que promedia los locales sin ponderar y mezcla períodos.
+        </p>
+      </section>
+      <section className="space-y-8">
+        <h2 className={CLASE_TITULO}>Evolución</h2>
+        <Evolucion filas={visibles} mes={mes} nombre={ctx.nombre} />
+      </section>
       {/* Con un local elegido la tabla tendría una fila: ya lo dicen las tarjetas. */}
       {!ctx.conLocal && <TablaDelMes ctx={ctx} mes={mes} />}
     </div>
