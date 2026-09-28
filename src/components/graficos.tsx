@@ -9,32 +9,36 @@ import { etiquetaMes } from "@/lib/filtros";
 // que CENFOR no dio.
 //
 // Un `null` es un mes sin dato: queda el hueco, nunca una barra en cero.
+//
+// Las piezas exportadas (Fondo, Linea, Punto…) son para los gráficos de
+// `graficos-anual.tsx`, no para las pantallas.
 
 export type Serie = { nombre: string; valores: (number | null)[] };
 
-type Marco = { ancho: number; alto: number; izq: number; n: number };
+export type Marco = { ancho: number; alto: number; izq: number; n: number };
 
-const ARRIBA = 18;
+export const ARRIBA = 18;
 const ABAJO = 22;
 const DER = 8;
-const CLASE_SERIE = ["fill-[var(--color-serie-1)]", "fill-[var(--color-serie-2)]"];
+export const CLASE_SERIE = ["fill-[var(--color-serie-1)]", "fill-[var(--color-serie-2)]"];
+export const TRAZO_SERIE = ["stroke-[var(--color-serie-1)]", "stroke-[var(--color-serie-2)]"];
 
-const alturaUtil = (m: Marco) => m.alto - ARRIBA - ABAJO;
-const anchoColumna = (m: Marco) => (m.ancho - m.izq - DER) / m.n;
-const centro = (m: Marco, i: number) => m.izq + anchoColumna(m) * (i + 0.5);
+export const alturaUtil = (m: Marco) => m.alto - ARRIBA - ABAJO;
+export const anchoColumna = (m: Marco) => (m.ancho - m.izq - DER) / m.n;
+export const centro = (m: Marco, i: number) => m.izq + anchoColumna(m) * (i + 0.5);
 
-const hayDatos = (valores: (number | null)[]) => valores.some((v) => v !== null);
+export const hayDatos = (valores: (number | null)[]) => valores.some((v) => v !== null);
 
 /** Lo que ocupa un rótulo de mes ("ago 26") a 10 px, con aire a los lados. */
 const ANCHO_ROTULO = 40;
 
 /** Sin ningún valor no se dibujan ejes: una escala de 0 a 1 se leería como un cero. */
-function SinDatoGrafico() {
+export function SinDatoGrafico() {
   return <p className="py-6 text-center text-sm italic text-[var(--color-piedra)]">sin dato</p>;
 }
 
 /** "2026-08" → "ago 26". */
-function abreviar(mes: string): string {
+export function abreviar(mes: string): string {
   const [nombre, anio] = etiquetaMes(mes).split(" ");
   return `${nombre.slice(0, 3).toLowerCase()} ${anio.slice(2)}`;
 }
@@ -50,7 +54,7 @@ export function extremos(valores: (number | null)[]): [number, number] {
 }
 
 /** Franja del mes elegido, guías con su valor y meses abajo. */
-function Fondo({
+export function Fondo({
   marco,
   meses,
   marcado,
@@ -58,6 +62,7 @@ function Fondo({
   y,
   formato,
   soloExtremos,
+  rotular = abreviar,
 }: {
   marco: Marco;
   meses: string[];
@@ -66,6 +71,7 @@ function Fondo({
   y: (v: number) => number;
   formato: (v: number) => string;
   soloExtremos: boolean;
+  rotular?: (mes: string) => string;
 }) {
   const cw = anchoColumna(marco);
   const i = meses.indexOf(marcado);
@@ -115,7 +121,7 @@ function Fondo({
             fontSize={10}
             className={m === marcado ? "fill-[var(--color-tinta)] font-semibold" : "fill-[var(--color-piedra)]"}
           >
-            {abreviar(m)}
+            {rotular(m)}
           </text>
         ) : null,
       )}
@@ -248,7 +254,7 @@ function tramos(valores: (number | null)[], x: (i: number) => number, y: (v: num
 }
 
 /** Un punto de la línea, o la zona transparente que guarda el tooltip de un mes sin dato. */
-function Punto({
+export function Punto({
   valor,
   cx,
   ancho,
@@ -256,6 +262,7 @@ function Punto({
   marco,
   tooltip,
   rotulo,
+  clase = CLASE_SERIE[0],
 }: {
   valor: number | null;
   cx: number;
@@ -264,6 +271,7 @@ function Punto({
   marco: Marco;
   tooltip: string;
   rotulo: string | null;
+  clase?: string;
 }) {
   if (valor === null)
     return (
@@ -273,11 +281,20 @@ function Punto({
     );
   return (
     <g>
-      <circle cx={cx} cy={y(valor)} r={3.5} className="fill-[var(--color-serie-1)]">
+      <circle cx={cx} cy={y(valor)} r={3.5} className={clase}>
         <title>{tooltip}</title>
       </circle>
       {rotulo !== null && (
-        <text x={cx} y={y(valor) - 8} textAnchor="middle" fontSize={10} className="fill-[var(--color-tinta)] font-semibold">
+        // El borde del color de la tarjeta lo despega de cualquier línea que pase por detrás.
+        <text
+          x={cx}
+          y={y(valor) - 8}
+          textAnchor="middle"
+          fontSize={10}
+          paintOrder="stroke"
+          strokeWidth={3}
+          className="fill-[var(--color-tinta)] stroke-[var(--color-tarjeta)] font-semibold"
+        >
           {rotulo}
         </text>
       )}
@@ -346,18 +363,19 @@ function MarcaCorte({
  * El tramo desde el corte va punteado, y el segmento que une los dos tramos
  * también: es el que cruza de una vara a la otra.
  */
-function Linea({
+export function Linea({
   valores,
   iCorte,
   x,
   y,
+  clase = TRAZO_SERIE[0],
 }: {
   valores: (number | null)[];
   iCorte: number;
   x: (i: number) => number;
   y: (v: number) => number;
+  clase?: string;
 }) {
-  const clase = "stroke-[var(--color-serie-1)]";
   if (iCorte <= 0)
     return <path d={tramos(valores, x, y)} fill="none" strokeWidth={2} className={clase} />;
   const parte = (dentro: (i: number) => boolean) =>

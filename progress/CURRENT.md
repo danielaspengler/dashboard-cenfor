@@ -47,6 +47,11 @@ Los títulos son tres clases —`titulo-pagina`, `titulo-seccion`, `titulo-tarje
 izquierda que afina con el nivel. Los 11 títulos de sección que estaban copiados a mano usan la
 clase. Al imprimir, fondo y tarjetas vuelven a blanco. Es una paleta provisoria: C11 sigue abierta.
 
+**Evolución de auditorías, año contra año (28/09/2026).** Una línea por año sobre ene–dic
+(`GraficoPorAnio`, en `src/components/graficos-anual.tsx`): dibuja los dos últimos años porque
+hay dos colores de serie validados; un tercer año pide validar un tercer color. MS y Auditorías ya
+no muestra evaluador ni auditor (decisión de Daniela).
+
 **Gráficos en verde y mostaza, más chicos (28/09/2026).** Series en `--color-serie-1` (#00806f,
 el verde de la fábrica de la propuesta de identidad aclarado un paso) y `--color-serie-2`
 (#c28a2c, la mostaza oscurecida); par validado con el script de dataviz sobre el beige. Ventas y

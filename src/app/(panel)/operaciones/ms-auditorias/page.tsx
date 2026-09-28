@@ -10,7 +10,8 @@ import { MES_CORTE, escalaAuditoria, nivelAuditoria, nivelDe } from "@/lib/marca
 import { esDelLooker, serieAuditorias, tieneFechaEstimada } from "@/lib/auditorias";
 import { type Busqueda, enMes, etiquetaMes, leerMesFiltro, mesesDeFechas } from "@/lib/filtros";
 import { FiltroMeses } from "@/components/filtros";
-import { GraficoLinea } from "@/components/graficos";
+import { Leyenda } from "@/components/graficos";
+import { GraficoPorAnio, type SerieAnual } from "@/components/graficos-anual";
 import {
   Card,
   Dato,
@@ -46,6 +47,23 @@ function dominioAuditorias(valores: (number | null)[]): [number, number] {
   const nums = valores.filter((v): v is number => v !== null);
   const piso = Math.min(55, Math.floor((Math.min(...nums) - 5) / 15) * 15);
   return [piso, 100];
+}
+
+/**
+ * La serie mensual partida en un año por línea. El año del corte va punteado
+ * desde el mes en que cambió la planilla.
+ */
+function serieAnual(serie: { meses: string[]; valores: (number | null)[] }): SerieAnual[] {
+  const anios = [...new Set(serie.meses.map((m) => m.slice(0, 4)))].sort();
+  const [anioCorte, mesCorte] = MES_CORTE.split("-");
+  return anios.map((anio) => ({
+    anio,
+    valores: Array.from({ length: 12 }, (_, i) => {
+      const k = serie.meses.indexOf(`${anio}-${String(i + 1).padStart(2, "0")}`);
+      return k === -1 ? null : serie.valores[k];
+    }),
+    corteDesde: anio === anioCorte ? Number(mesCorte) - 1 : undefined,
+  }));
 }
 
 function repartoPorPlanilla(auditorias: AuditoriaFila[]): string {
@@ -98,12 +116,13 @@ export default async function MsAuditoriasPage({
   const serie = serieAuditorias(
     todasLasAuditorias.filter((a) => !(a.location_id && cerradoPorId.has(a.location_id))),
   );
+  const porAnio = serieAnual(serie);
 
   return (
     <>
       <PageHeader
         titulo="Mystery Shopper y Auditorías"
-        bajada={`Puntajes calculados por las planillas del cliente · mystery shopper ≥90 excelente, ≥75 bueno, ≥60 regular. Desde ${MES_DEL_CORTE} la planilla de auditoría puntúa más exigente: 85 o más cumple. Los puntajes anteriores no se comparan con los nuevos.`}
+        bajada="Puntajes calculados por las planillas del cliente · mystery shopper ≥90 excelente, ≥75 bueno, ≥60 regular."
         extra={<FiltroMeses actual={mes} meses={meses} />}
       />
 
@@ -152,7 +171,6 @@ export default async function MsAuditoriasPage({
               <tr>
                 <Th>Fecha</Th>
                 <Th>Local</Th>
-                <Th>Evaluador</Th>
                 <Th>Tipo</Th>
                 <Th className="text-right">Puntaje</Th>
                 <Th>Clasificación</Th>
@@ -178,7 +196,6 @@ export default async function MsAuditoriasPage({
                         <SinDato>—</SinDato>
                       )}
                     </Td>
-                    <Td className="text-[var(--color-piedra)]">{v.evaluator ?? "—"}</Td>
                     <Td className="text-xs uppercase text-[var(--color-piedra)]">
                       {v.experience_type === "delivery" ? "Delivery" : "Take away"}
                     </Td>
@@ -217,7 +234,6 @@ export default async function MsAuditoriasPage({
               <tr>
                 <Th>Fecha</Th>
                 <Th>Local</Th>
-                <Th>Auditor</Th>
                 <Th>Planilla</Th>
                 <Th className="text-right">Puntaje</Th>
                 <Th>Nivel</Th>
@@ -253,16 +269,13 @@ export default async function MsAuditoriasPage({
                           <SinDato>—</SinDato>
                         ))}
                     </Td>
-                    <Td className="text-[var(--color-piedra)]">
-                      {a.auditor ??
-                        (esDelLooker(a) ? (
-                          <span className="text-xs">sin desglose · histórico del Looker</span>
-                        ) : (
-                          "—"
-                        ))}
-                    </Td>
-                    <Td className="text-xs uppercase text-[var(--color-piedra)]">
-                      {planilla === "desconocida" ? "sin dato" : planilla}
+                    <Td className="text-xs text-[var(--color-piedra)]">
+                      <span className="uppercase">
+                        {planilla === "desconocida" ? "sin dato" : planilla}
+                      </span>
+                      {esDelLooker(a) && (
+                        <span className="ml-2">sin desglose · histórico del Looker</span>
+                      )}
                     </Td>
                     <Td className="text-right">
                       <Puntaje pct={a.score_pct} escala="auditoria" fecha={a.audit_date} />
@@ -282,26 +295,26 @@ export default async function MsAuditoriasPage({
             Evolución del puntaje de auditoría
           </h2>
           <p className="mb-3 text-xs text-[var(--color-piedra)]">
-            Promedios mensuales de las auditorías de locales activos. El filtro de fecha no recorta
-            esta serie.
+            Promedio mensual de las auditorías de locales activos, un año contra el otro. El tramo
+            punteado ya se mide con la planilla de {MES_DEL_CORTE}, más exigente: no se compara con
+            los meses anteriores.
           </p>
           <Card>
             {serie.meses.length < 2 ? (
               <SinDato>sin dato</SinDato>
             ) : (
-              <GraficoLinea
-                titulo="Evolución del puntaje de auditoría"
-                meses={serie.meses}
-                valores={serie.valores}
-                formato={(v) => `${v.toFixed(1)}%`}
-                marcado={mes}
-                dominio={dominioAuditorias(serie.valores)}
-                ancho={960}
-                corte={{
-                  mes: MES_CORTE,
-                  antes: "medido con la planilla anterior",
-                }}
-              />
+              <>
+                <div className="mb-2 flex justify-end">
+                  <Leyenda series={porAnio.map((s) => ({ nombre: s.anio, valores: s.valores }))} />
+                </div>
+                <GraficoPorAnio
+                  titulo="Evolución del puntaje de auditoría, año contra año"
+                  series={porAnio}
+                  formato={(v) => `${v.toFixed(1)}%`}
+                  marcado={mes}
+                  dominio={dominioAuditorias(serie.valores)}
+                />
+              </>
             )}
           </Card>
         </section>
