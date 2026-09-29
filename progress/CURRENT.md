@@ -410,7 +410,8 @@ duplicar una auditoría—: dejaron de mostrarse, no se borraron.
   muestran por separado, sin compararlos.
 - **Umbrales de delivery** — qué porcentaje de reclamos, cancelaciones, demora y disponibilidad
   es aceptable. Sin eso la pantalla muestra los números sin semáforo.
-- placeId de Censurado Luuma · qué mails van en `emails_autorizados`.
+- placeId de Censurado Luuma.
+- **Acceso de los socios (29/09/2026):** Gastón Gil (Gmail), Tomás y Benjamín Hansen (@cenforgastro.com) cargados en `emails_autorizados`. cenforgastro.com tiene el correo en Hostinger, no en Google: los Hansen entran solo si crean una cuenta de Google con ese mail. Si no pueden, pedir un Gmail.
 
 **Identidad visual:** CENFOR no tiene. Daniela decidió el 25/09/2026 que la paleta la definimos
 nosotros más adelante (`src/lib/marca.ts`, feature C11).
